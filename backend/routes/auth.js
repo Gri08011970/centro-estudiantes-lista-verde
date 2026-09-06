@@ -38,6 +38,16 @@ console.log(
 
     const coincide = await bcrypt.compare(password, PASSWORD_HASH);
 
+    const coincide = await bcrypt.compare(password, PASSWORD_HASH);
+
+console.log("Contraseña coincide:", coincide);
+
+if (!coincide) {
+  return res.status(401).json({
+    mensaje: "Usuario o contraseña incorrectos.",
+  });
+}
+
     if (!coincide) {
       return res.status(401).json({
         mensaje: "Usuario o contraseña incorrectos.",
