@@ -1395,12 +1395,10 @@ function App() {
           <div className="manual-destacado-texto">
             <span className="manual-sello">EN CONSTRUCCIÓN</span>
 
-            <h3>Manual Digital del Estudiante</h3>
+            <h4>MANUAL DIGITAL PARA EL CUIDADO Y MANTENIMIENTO DE INSTRUMENTOS MUSICALES</h4>
 
             <p>
-              Este proyecto busca reunir orientaciones, derechos, formas de
-              participación y herramientas que puedan ayudar a los estudiantes
-              en su vida escolar.
+              Este proyecto es una guía para estudiantes y profesores destinada a los instrumentos musicales y la organización del pañol.
             </p>
 
             <div className="manual-autoria">
