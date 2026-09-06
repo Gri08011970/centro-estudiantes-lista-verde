@@ -119,5 +119,31 @@ router.patch("/:id/estado", verificarToken, async (req, res) => {
     });
   }
 });
+// ========================================
+// ELIMINAR PARTICIPACIÓN
+// PRIVADA - SOLO GESTIÓN
+// ========================================
+router.delete("/:id", verificarToken, async (req, res) => {
+  try {
+    const participacionEliminada =
+      await Participacion.findByIdAndDelete(req.params.id);
+
+    if (!participacionEliminada) {
+      return res.status(404).json({
+        mensaje: "Participación no encontrada.",
+      });
+    }
+
+    res.json({
+      mensaje: "Participación eliminada correctamente.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      mensaje: "No se pudo eliminar la participación.",
+      error: error.message,
+    });
+  }
+});
+
 
 module.exports = router;
