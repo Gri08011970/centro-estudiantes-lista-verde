@@ -4,7 +4,9 @@ const express = require("express");
 const Participacion = require("../models/Participacion");
 const verificarToken = require("../middleware/verificarToken");
 
-const { enviarAvisoParticipacion } = require("../services/mailService");
+const {
+  enviarAvisoParticipacion,
+} = require("../services/mailService");
 
 const router = express.Router();
 
@@ -28,18 +30,22 @@ router.post("/", async (req, res) => {
       mensaje,
     });
 
-    try {
-      await enviarAvisoParticipacion({
-        curso,
-        motivo,
-        mensaje,
-      });
-    } catch (errorMail) {
-      console.error("No se pudo enviar el aviso por mail:", errorMail.message);
-    }
+    // Respondemos inmediatamente al formulario.
+    // El envío del mail continúa aparte para no bloquear al estudiante.
     res.status(201).json({
       mensaje: "Tu participación fue enviada correctamente.",
       participacion: nuevaParticipacion,
+    });
+
+    enviarAvisoParticipacion({
+      curso,
+      motivo,
+      mensaje,
+    }).catch((errorMail) => {
+      console.error(
+        "No se pudo enviar el aviso por mail:",
+        errorMail.message,
+      );
     });
   } catch (error) {
     res.status(400).json({
@@ -76,7 +82,12 @@ router.patch("/:id/estado", verificarToken, async (req, res) => {
   try {
     const { estado } = req.body;
 
-    const estadosPermitidos = ["Nuevo", "Leído", "En tratamiento", "Resuelto"];
+    const estadosPermitidos = [
+      "Nuevo",
+      "Leído",
+      "En tratamiento",
+      "Resuelto",
+    ];
 
     if (!estadosPermitidos.includes(estado)) {
       return res.status(400).json({
@@ -84,14 +95,15 @@ router.patch("/:id/estado", verificarToken, async (req, res) => {
       });
     }
 
-    const participacionActualizada = await Participacion.findByIdAndUpdate(
-      req.params.id,
-      { estado },
-      {
-        new: true,
-        runValidators: true,
-      },
-    );
+    const participacionActualizada =
+      await Participacion.findByIdAndUpdate(
+        req.params.id,
+        { estado },
+        {
+          new: true,
+          runValidators: true,
+        },
+      );
 
     if (!participacionActualizada) {
       return res.status(404).json({
