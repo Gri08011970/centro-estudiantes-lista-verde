@@ -13,7 +13,7 @@ function App() {
   const [participacion, setParticipacion] = useState({
     curso: "",
     motivo: "",
-    mensaje: "",
+    mensaje: "", 
   });
   const [participacionesGestion, setParticipacionesGestion] = useState([]); 
  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false); 
@@ -89,7 +89,7 @@ function App() {
     if (movimientoEditandoId !== null) {
       try {
         const respuesta = await fetch(
-          `http://localhost:5000/api/movimientos/${movimientoEditandoId}`,
+          `https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/${movimientoEditandoId}`,
           {
             method: "PUT",
             headers: {
@@ -140,7 +140,7 @@ function App() {
     };
 
     try {
-      const respuesta = await fetch("http://localhost:5000/api/movimientos", {
+      const respuesta = await fetch("https://centro-estudiantes-lista-verde.onrender.com/api/movimientos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -213,7 +213,7 @@ function App() {
 
     try {
       const respuesta = await fetch(
-        `http://localhost:5000/api/movimientos/${id}`,
+        `https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -254,7 +254,7 @@ function App() {
 
     try {
       const respuesta = await fetch(
-        `http://localhost:5000/api/movimientos/${id}/anular`,
+        `https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/${id}/anular`,
         {
           method: "PATCH",
           headers: {
@@ -368,9 +368,9 @@ function App() {
 
         const [respuestaMovimientos, respuestaConfiguracion] =
           await Promise.all([
-            fetch("http://localhost:5000/api/movimientos", opciones),
+            fetch("https://centro-estudiantes-lista-verde.onrender.com/api/movimientos", opciones),
             fetch(
-              "http://localhost:5000/api/movimientos/configuracion/tesoreria",
+              "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/configuracion/tesoreria",
               opciones,
             ),
           ]);
@@ -402,7 +402,7 @@ function App() {
         const token = sessionStorage.getItem("gestionToken");
 
         const respuesta = await fetch(
-          "http://localhost:5000/api/participaciones",
+          "https://centro-estudiantes-lista-verde.onrender.com/api/participaciones",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -454,7 +454,7 @@ function App() {
     setErrorLogin("");
 
     try {
-      const respuesta = await fetch("http://localhost:5000/api/auth/login", {
+      const respuesta = await fetch("https://centro-estudiantes-lista-verde.onrender.com/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -571,7 +571,7 @@ function App() {
 
     try {
       const respuesta = await fetch(
-        "http://localhost:5000/api/participaciones",
+        "https://centro-estudiantes-lista-verde.onrender.com/api/participaciones",
         {
           method: "POST",
           headers: {
@@ -613,14 +613,14 @@ function App() {
       document.getElementById("buzon-gestion")?.scrollIntoView({
         behavior: "smooth",
         block: "start",
-      });
+      }); 
     }, 100);
   };
 
   const cambiarEstadoParticipacion = async (id, nuevoEstado) => {
     try {
       const respuesta = await fetch(
-        `http://localhost:5000/api/participaciones/${id}/estado`,
+        `https://centro-estudiantes-lista-verde.onrender.com/api/participaciones/${id}/estado`,
         {
           method: "PATCH",
           headers: {
