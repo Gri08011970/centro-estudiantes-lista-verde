@@ -13,17 +13,6 @@ router.post("/login", async (req, res) => {
   try {
     const { usuario, password } = req.body;
 
-    // DIAGNÓSTICO TEMPORAL
-console.log("GESTION_USUARIO existe:", Boolean(process.env.GESTION_USUARIO));
-console.log(
-  "GESTION_PASSWORD_HASH existe:",
-  Boolean(process.env.GESTION_PASSWORD_HASH)
-);
-console.log(
-  "Usuario recibido coincide:",
-  usuario === process.env.GESTION_USUARIO
-);
-
     if (!usuario || !password) {
       return res.status(400).json({
         mensaje: "Completá usuario y contraseña.",
@@ -37,15 +26,6 @@ console.log(
     }
 
     const coincide = await bcrypt.compare(password, PASSWORD_HASH);
-
-    
-console.log("Contraseña coincide:", coincide);
-
-if (!coincide) {
-  return res.status(401).json({
-    mensaje: "Usuario o contraseña incorrectos.",
-  });
-}
 
     if (!coincide) {
       return res.status(401).json({
