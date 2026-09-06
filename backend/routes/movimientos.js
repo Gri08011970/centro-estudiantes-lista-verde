@@ -7,7 +7,7 @@ const verificarToken = require("../middleware/verificarToken");
 
 const router = express.Router();
 
-router.use(verificarToken);
+router.use(verificarToken); 
 
 // ========================================
 // OBTENER TODOS LOS MOVIMIENTOS
