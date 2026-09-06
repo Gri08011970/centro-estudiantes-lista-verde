@@ -38,8 +38,7 @@ console.log(
 
     const coincide = await bcrypt.compare(password, PASSWORD_HASH);
 
-    const coincide = await bcrypt.compare(password, PASSWORD_HASH);
-
+    
 console.log("Contraseña coincide:", coincide);
 
 if (!coincide) {
