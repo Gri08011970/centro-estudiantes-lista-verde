@@ -1,25 +1,21 @@
-/* global require, module, process */
-
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
+/* global module, process */
 
 const enviarAvisoParticipacion = async ({
   curso,
   motivo,
   mensaje,
 }) => {
-  await transporter.sendMail({
-    from: `"Lista Verde - Centro de Estudiantes" <${process.env.MAIL_USER}>`,
-    to: process.env.MAIL_DESTINO,
-    subject: `Nueva participación - ${curso} - ${motivo}`,
-    text: `
+  const respuesta = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Lista Verde - Centro de Estudiantes <onboarding@resend.dev>",
+      to: [process.env.MAIL_DESTINO],
+      subject: `Nueva participación - ${curso} - ${motivo}`,
+      text: `
 Nueva participación recibida.
 
 Curso: ${curso}
@@ -29,8 +25,19 @@ Mensaje:
 ${mensaje}
 
 Ingresá al sistema de Gestión para organizar su seguimiento.
-    `,
+      `,
+    }),
   });
+
+  const datos = await respuesta.json();
+
+  if (!respuesta.ok) {
+    throw new Error(
+      datos.message || "No se pudo enviar el aviso por Resend.",
+    );
+  }
+
+  return datos;
 };
 
 module.exports = {
