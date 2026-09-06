@@ -1,4 +1,4 @@
-/* global require, process, __dirname */
+/* global require, process, __dirname */ 
 
 const express = require("express");
 const mongoose = require("mongoose");
@@ -22,9 +22,7 @@ app.use(express.json());
 app.use("/api/movimientos", movimientosRoutes);
 app.use("/api/auth", authRoutes);
 // Ruta de prueba
-app.get("/", (req, res) => {
-  res.send("🐢 API Lista Verde funcionando");
-});
+
 app.use("/api/participaciones", participacionesRoutes);
 
 // ========================================
