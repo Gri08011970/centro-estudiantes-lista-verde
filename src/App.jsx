@@ -1184,9 +1184,7 @@ function App() {
 
         <div className="proyectos-grid">
           <article className="proyecto-card">
-            <div className="proyecto-estado estado-planificacion">
-              📝 PLANIFICACIÓN
-            </div>
+            <div className="proyecto-estado estado-en-marcha">🟡 EN MARCHA</div>
 
             <h3>Manual Digital del Estudiante</h3>
 
@@ -1588,7 +1586,7 @@ function App() {
             >
               🔓 Cerrar sesión
             </button>
-          )} 
+          )}
 
           <h2>Gestión</h2>
 
@@ -1965,7 +1963,7 @@ function App() {
             </div>
 
             <div className="gestion-sesion">
-              <span>🔓 Sesión de Gestión iniciada</span> 
+              <span>🔓 Sesión de Gestión iniciada</span>
             </div>
           </>
         )}
