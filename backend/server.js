@@ -1,9 +1,10 @@
-/* global require, process */
+/* global require, process, __dirname */
 
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const path = require("path");
 
 dotenv.config();
 
@@ -25,6 +26,18 @@ app.get("/", (req, res) => {
   res.send("🐢 API Lista Verde funcionando");
 });
 app.use("/api/participaciones", participacionesRoutes);
+
+// ========================================
+// FRONTEND REACT
+// ========================================
+
+const frontendPath = path.join(__dirname, "../dist");
+
+app.use(express.static(frontendPath));
+
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
 // Conexión a MongoDB
 mongoose
