@@ -4315,3 +4315,70 @@ a {
     font-size: 1.25rem;
   }
 }
+.buzon-eliminar {
+  background: #f6ded8 !important;
+  color: #9a4638 !important;
+}
+
+.buzon-eliminar:hover {
+  background: #efc9c0 !important;
+}
+.password-contenedor {
+  position: relative;
+  width: 100%;
+}
+
+.password-contenedor input {
+  width: 100%;
+  padding-right: 48px;
+  box-sizing: border-box;
+}
+
+.password-ojo {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.password-ojo:hover {
+  transform: translateY(-50%) scale(1.08);
+}
+.gestion-encabezado {
+  position: relative;
+}
+
+.gestion-cerrar-superior {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 14px;
+  background: #e5f1c9;
+  color: #174d2e;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.gestion-cerrar-superior:hover {
+  background: #d5e8ac;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 700px) {
+  .gestion-cerrar-superior {
+    position: static;
+    margin: 14px auto 0;
+    display: block;
+  }
+}

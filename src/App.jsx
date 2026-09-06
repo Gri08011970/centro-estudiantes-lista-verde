@@ -13,10 +13,11 @@ function App() {
   const [participacion, setParticipacion] = useState({
     curso: "",
     motivo: "",
-    mensaje: "", 
+    mensaje: "",
   });
-  const [participacionesGestion, setParticipacionesGestion] = useState([]); 
- const [menuMovilAbierto, setMenuMovilAbierto] = useState(false); 
+  const [participacionesGestion, setParticipacionesGestion] = useState([]);
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
   const [mensajeParticipacion, setMensajeParticipacion] = useState("");
   const [errorParticipacion, setErrorParticipacion] = useState("");
@@ -140,14 +141,17 @@ function App() {
     };
 
     try {
-      const respuesta = await fetch("https://centro-estudiantes-lista-verde.onrender.com/api/movimientos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
+      const respuesta = await fetch(
+        "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
+          },
+          body: JSON.stringify(movimiento),
         },
-        body: JSON.stringify(movimiento),
-      });
+      );
 
       if (!respuesta.ok) {
         throw new Error("No se pudo guardar el movimiento.");
@@ -368,7 +372,10 @@ function App() {
 
         const [respuestaMovimientos, respuestaConfiguracion] =
           await Promise.all([
-            fetch("https://centro-estudiantes-lista-verde.onrender.com/api/movimientos", opciones),
+            fetch(
+              "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos",
+              opciones,
+            ),
             fetch(
               "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/configuracion/tesoreria",
               opciones,
@@ -454,13 +461,16 @@ function App() {
     setErrorLogin("");
 
     try {
-      const respuesta = await fetch("https://centro-estudiantes-lista-verde.onrender.com/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const respuesta = await fetch(
+        "https://centro-estudiantes-lista-verde.onrender.com/api/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(loginGestion),
         },
-        body: JSON.stringify(loginGestion),
-      });
+      );
 
       const datos = await respuesta.json();
 
@@ -613,7 +623,7 @@ function App() {
       document.getElementById("buzon-gestion")?.scrollIntoView({
         behavior: "smooth",
         block: "start",
-      }); 
+      });
     }, 100);
   };
 
@@ -651,148 +661,144 @@ function App() {
     }
   };
 
+  const eliminarParticipacion = async (id) => {
+    const confirmar = window.confirm(
+      "¿Eliminar este mensaje del Buzón? Esta acción no se puede deshacer.",
+    );
+
+    if (!confirmar) return;
+
+    try {
+      const respuesta = await fetch(
+        `https://centro-estudiantes-lista-verde.onrender.com/api/participaciones/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
+          },
+        },
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("No se pudo eliminar el mensaje.");
+      }
+
+      setParticipacionesGestion((actuales) =>
+        actuales.filter((participacion) => participacion._id !== id),
+      );
+
+      alert("Mensaje eliminado correctamente. ✅");
+    } catch (error) {
+      console.error("Error al eliminar participación:", error);
+      alert("No se pudo eliminar el mensaje.");
+    }
+  };
+
   return (
-  <main className="pagina">
-    <section className="hero" id="inicio">
-      <header className="barra-superior">
-        <div className="marca">
-          <img src={logoListaVerde} alt="Logo Lista Verde" />
-          <span>LISTA VERDE</span>
-        </div>
+    <main className="pagina">
+      <section className="hero" id="inicio">
+        <header className="barra-superior">
+          <div className="marca">
+            <img src={logoListaVerde} alt="Logo Lista Verde" />
+            <span>LISTA VERDE</span>
+          </div>
 
-        <button
-          type="button"
-          className="menu-hamburguesa"
-          onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
-          aria-label="Abrir menú"
-        >
-          {menuMovilAbierto ? "✕" : "☰"}
-        </button>
+          <button
+            type="button"
+            className="menu-hamburguesa"
+            onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
+            aria-label="Abrir menú"
+          >
+            {menuMovilAbierto ? "✕" : "☰"}
+          </button>
 
-        <nav
-          className={`menu ${menuMovilAbierto ? "menu-abierto" : ""}`}
-        >
+          <nav className={`menu ${menuMovilAbierto ? "menu-abierto" : ""}`}>
+            <a href="#inicio" onClick={() => setMenuMovilAbierto(false)}>
+              Inicio
+            </a>
+
+            <a href="#quienes-somos" onClick={() => setMenuMovilAbierto(false)}>
+              Quiénes somos
+            </a>
+
+            <a href="#comunicados" onClick={() => setMenuMovilAbierto(false)}>
+              Comunicados
+            </a>
+
+            <a href="#derechos" onClick={() => setMenuMovilAbierto(false)}>
+              Derechos
+            </a>
+
+            <a href="#proyectos" onClick={() => setMenuMovilAbierto(false)}>
+              Proyectos
+            </a>
+
+            <a href="#participa" onClick={() => setMenuMovilAbierto(false)}>
+              Participá
+            </a>
+
+            <div className="menu-mas">
+              <button type="button" className="menu-mas-boton">
+                Más ▾
+              </button>
+
+              <div className="submenu">
+                <a href="#estatuto" onClick={() => setMenuMovilAbierto(false)}>
+                  Estatuto
+                </a>
+
+                <a href="#manual" onClick={() => setMenuMovilAbierto(false)}>
+                  Manual Digital
+                </a>
+
+                <a href="#galeria" onClick={() => setMenuMovilAbierto(false)}>
+                  Galería
+                </a>
+              </div>
+            </div>
+          </nav>
+
           <a
-            href="#inicio"
+            href="#gestion"
+            className="boton-gestion"
             onClick={() => setMenuMovilAbierto(false)}
           >
-            Inicio
+            🔒 Gestión
           </a>
+        </header>
+
+        <div className="forma forma-1"></div>
+        <div className="forma forma-2"></div>
+        <div className="forma forma-3"></div>
+
+        <div className="hero-contenido">
+          <img
+            src={logoListaVerde}
+            alt="Logo Centro de Estudiantes Lista Verde"
+            className="logo-principal"
+          />
+
+          <p className="etiqueta">CENTRO DE ESTUDIANTES</p>
+
+          <h1>E.E.S. N.º 50</h1>
+
+          <h2>“Luis Alberto Spinetta”</h2>
+
+          <p className="ubicacion">Morón · Orientación en Música</p>
+
+          <p className="frase">
+            Una escuela también se construye con la voz de sus estudiantes.
+          </p>
 
           <a
+            className="scroll"
             href="#quienes-somos"
             onClick={() => setMenuMovilAbierto(false)}
           >
-            Quiénes somos
+            ↓<span>DESLIZÁ PARA DESCUBRIR</span>
           </a>
+        </div>
 
-          <a
-            href="#comunicados"
-            onClick={() => setMenuMovilAbierto(false)}
-          >
-            Comunicados
-          </a>
-
-          <a
-            href="#derechos"
-            onClick={() => setMenuMovilAbierto(false)}
-          >
-            Derechos
-          </a>
-
-          <a
-            href="#proyectos"
-            onClick={() => setMenuMovilAbierto(false)}
-          >
-            Proyectos
-          </a>
-
-          <a
-            href="#participa"
-            onClick={() => setMenuMovilAbierto(false)}
-          >
-            Participá
-          </a>
-
-          <div className="menu-mas">
-            <button
-              type="button"
-              className="menu-mas-boton"
-            >
-              Más ▾
-            </button>
-
-            <div className="submenu">
-              <a
-                href="#estatuto"
-                onClick={() => setMenuMovilAbierto(false)}
-              >
-                Estatuto
-              </a>
-
-              <a
-                href="#manual"
-                onClick={() => setMenuMovilAbierto(false)}
-              >
-                Manual Digital
-              </a>
-
-              <a
-                href="#galeria"
-                onClick={() => setMenuMovilAbierto(false)}
-              >
-                Galería
-              </a>
-            </div>
-          </div>
-        </nav>
-
-        <a
-          href="#gestion"
-          className="boton-gestion"
-          onClick={() => setMenuMovilAbierto(false)}
-        >
-          🔒 Gestión
-        </a>
-      </header>
-
-      <div className="forma forma-1"></div>
-      <div className="forma forma-2"></div>
-      <div className="forma forma-3"></div>
-
-      <div className="hero-contenido">
-        <img
-          src={logoListaVerde}
-          alt="Logo Centro de Estudiantes Lista Verde"
-          className="logo-principal"
-        />
-
-        <p className="etiqueta">
-          CENTRO DE ESTUDIANTES
-        </p>
-
-        <h1>E.E.S. N.º 50</h1>
-
-        <h2>“Luis Alberto Spinetta”</h2>
-
-        <p className="ubicacion">
-          Morón · Orientación en Música
-        </p>
-
-        <p className="frase">
-          Una escuela también se construye con la voz de sus estudiantes.
-        </p>
-
-        <a
-          className="scroll"
-          href="#quienes-somos"
-          onClick={() => setMenuMovilAbierto(false)}
-        >
-          ↓
-          <span>DESLIZÁ PARA DESCUBRIR</span>
-        </a>
-      </div>
-      
         <div className="mensaje-lateral mensaje-izq">
           misma escuela
           <br />
@@ -1395,10 +1401,14 @@ function App() {
           <div className="manual-destacado-texto">
             <span className="manual-sello">EN CONSTRUCCIÓN</span>
 
-            <h4>MANUAL DIGITAL PARA EL CUIDADO Y MANTENIMIENTO DE INSTRUMENTOS MUSICALES</h4>
+            <h4>
+              MANUAL DIGITAL PARA EL CUIDADO Y MANTENIMIENTO DE INSTRUMENTOS
+              MUSICALES
+            </h4>
 
             <p>
-              Este proyecto es una guía para estudiantes y profesores destinada a los instrumentos musicales y la organización del pañol.
+              Este proyecto es una guía para estudiantes y profesores destinada
+              a los instrumentos musicales y la organización del pañol.
             </p>
 
             <div className="manual-autoria">
@@ -1570,6 +1580,15 @@ function App() {
       <section className="gestion" id="gestion">
         <div className="gestion-encabezado">
           <span className="gestion-etiqueta">🔒 ESPACIO DE ADMINISTRACIÓN</span>
+          {gestionAutorizada && (
+            <button
+              type="button"
+              className="gestion-cerrar-superior"
+              onClick={cerrarSesionGestion}
+            >
+              🔓 Cerrar sesión
+            </button>
+          )} 
 
           <h2>Gestión</h2>
 
@@ -1617,19 +1636,39 @@ function App() {
               <div className="gestion-login-campo">
                 <label htmlFor="passwordGestion">Contraseña</label>
 
-                <input
-                  id="passwordGestion"
-                  type="password"
-                  value={loginGestion.password}
-                  onChange={(e) =>
-                    setLoginGestion({
-                      ...loginGestion,
-                      password: e.target.value,
-                    })
-                  }
-                  autoComplete="current-password"
-                  placeholder="Contraseña"
-                />
+                <div className="password-contenedor">
+                  <input
+                    id="passwordGestion"
+                    type={mostrarPassword ? "text" : "password"}
+                    value={loginGestion.password}
+                    onChange={(e) =>
+                      setLoginGestion({
+                        ...loginGestion,
+                        password: e.target.value,
+                      })
+                    }
+                    autoComplete="current-password"
+                    placeholder="Contraseña"
+                  />
+
+                  <button
+                    type="button"
+                    className="password-ojo"
+                    onClick={() => setMostrarPassword(!mostrarPassword)}
+                    aria-label={
+                      mostrarPassword
+                        ? "Ocultar contraseña"
+                        : "Mostrar contraseña"
+                    }
+                    title={
+                      mostrarPassword
+                        ? "Ocultar contraseña"
+                        : "Mostrar contraseña"
+                    }
+                  >
+                    {mostrarPassword ? "👀" : "🙈"}
+                  </button>
+                </div>
               </div>
 
               {errorLogin && (
@@ -1821,7 +1860,7 @@ function App() {
                               .replace("í", "i")}`}
                           >
                             {participacion.estado === "Nuevo"
-                              ? "No leído" 
+                              ? "No leído"
                               : participacion.estado}
                           </span>
                         </div>
@@ -1879,6 +1918,17 @@ function App() {
                             ✅ Resuelto
                           </button>
                         </div>
+                        <div className="buzon-eliminar-contenedor">
+                          <button
+                            type="button"
+                            className="buzon-eliminar"
+                            onClick={() =>
+                              eliminarParticipacion(participacion._id)
+                            }
+                          >
+                            🗑️ Eliminar mensaje
+                          </button>
+                        </div>
 
                         <div className="buzon-mensaje-pie">
                           <div className="buzon-tortuguita">
@@ -1915,11 +1965,7 @@ function App() {
             </div>
 
             <div className="gestion-sesion">
-              <span>🔓 Sesión de Gestión iniciada</span>
-
-              <button type="button" onClick={cerrarSesionGestion}>
-                Cerrar sesión
-              </button>
+              <span>🔓 Sesión de Gestión iniciada</span> 
             </div>
           </>
         )}
