@@ -32,6 +32,13 @@ a {
   border: 8px solid #3f7546;
 }
 
+.hero-solo-menu {
+  min-height: auto;
+  overflow: visible;
+  background: transparent;
+  border-bottom: none;
+}
+
 .barra-superior {
   position: relative;
   z-index: 20;
@@ -4370,7 +4377,7 @@ a {
     background 0.2s ease;
 }
 
-.gestion-cerrar-superior:hover {
+.gestion-cerrar-superior:hover { 
   background: #d5e8ac;
   transform: translateY(-2px);
 }
@@ -4381,4 +4388,41 @@ a {
     margin: 14px auto 0;
     display: block;
   }
+}
+.boton-volver-gestion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 11px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+
+  background: #e8f4cf;
+  color: #164d32;
+
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.12);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.boton-volver-gestion:hover {
+  background: #f5f9e9;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 rgba(0, 0, 0, 0.12);
+}
+
+.boton-volver-gestion:active {
+  transform: translateY(1px);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12);
 }

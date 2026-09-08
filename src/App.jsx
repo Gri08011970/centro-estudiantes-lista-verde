@@ -2,8 +2,23 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import logoListaVerde from "./assets/logo-lista-verde.jpeg";
 
+const seccionesValidas = [
+  "inicio",
+  "quienes-somos",
+  "comunicados",
+  "derechos",
+  "proyectos",
+  "participa",
+  "estatuto",
+  "manual",
+  "galeria",
+  "gestion",
+  "tesoreria",
+];
+
 function App() {
   const hoy = new Date().toISOString().split("T")[0];
+  const [comunicados, setComunicados] = useState([]);
   const [mostrarSubir, setMostrarSubir] = useState(false);
   const [movimientos, setMovimientos] = useState([]);
   const [siguienteNumeroRecibo, setSiguienteNumeroRecibo] = useState(1);
@@ -21,12 +36,35 @@ function App() {
 
   const [mensajeParticipacion, setMensajeParticipacion] = useState("");
   const [errorParticipacion, setErrorParticipacion] = useState("");
+  const comunicadoDestacado = comunicados.find(
+    (comunicado) => comunicado.destacado,
+  );
+
+  const comunicadosSecundarios = comunicados.filter(
+    (comunicado) => !comunicado.destacado,
+  );
+
+  const [nuevoComunicado, setNuevoComunicado] = useState({
+    fecha: hoy,
+    categoria: "",
+    titulo: "",
+    texto: "",
+    destacado: false,
+    publicado: false,
+  });
+
+  const [moduloGestionActivo, setModuloGestionActivo] = useState(null);
+  const obtenerSeccionInicial = () => {
+    const hash = window.location.hash.replace("#", "");
+
+    return seccionesValidas.includes(hash) ? hash : "inicio";
+  };
+
+  const [seccionActiva, setSeccionActiva] = useState(obtenerSeccionInicial);
 
   const [gestionAutorizada, setGestionAutorizada] = useState(() => {
     return Boolean(sessionStorage.getItem("gestionToken"));
   });
-
-  const [mostrarBuzon, setMostrarBuzon] = useState(false);
 
   const [loginGestion, setLoginGestion] = useState({
     usuario: "",
@@ -356,6 +394,41 @@ function App() {
       : "—";
 
   useEffect(() => {
+    const cargarComunicados = async () => {
+      try {
+        const respuesta = await fetch(
+  "https://centro-estudiantes-lista-verde.onrender.com/api/comunicados",
+);
+
+        if (!respuesta.ok) {
+          throw new Error("No se pudieron cargar los comunicados.");
+        }
+
+        const datos = await respuesta.json();
+        setComunicados(datos);
+      } catch (error) {
+        console.error("Error al cargar comunicados:", error);
+      }
+    };
+
+    cargarComunicados();
+  }, []);
+
+  useEffect(() => {
+    const manejarCambioHash = () => {
+      const hash = window.location.hash.replace("#", "");
+
+      setSeccionActiva(seccionesValidas.includes(hash) ? hash : "inicio");
+    };
+
+    window.addEventListener("hashchange", manejarCambioHash);
+
+    return () => {
+      window.removeEventListener("hashchange", manejarCambioHash);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!gestionAutorizada) {
       return;
     }
@@ -616,16 +689,6 @@ function App() {
     }
   };
 
-  const abrirBuzon = () => {
-    setMostrarBuzon(true);
-
-    setTimeout(() => {
-      document.getElementById("buzon-gestion")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 100);
-  };
 
   const cambiarEstadoParticipacion = async (id, nuevoEstado) => {
     try {
@@ -694,9 +757,64 @@ function App() {
     }
   };
 
+  const guardarComunicado = async () => {
+    if (
+      !nuevoComunicado.fecha ||
+      !nuevoComunicado.categoria.trim() ||
+      !nuevoComunicado.titulo.trim() ||
+      !nuevoComunicado.texto.trim()
+    ) {
+      alert("Completá fecha, categoría, título y texto.");
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const respuesta = await fetch(
+        "https://centro-estudiantes-lista-verde.onrender.com/api/comunicados",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(nuevoComunicado),
+        },
+      );
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(datos.mensaje || "No se pudo guardar el comunicado.");
+      }
+
+      alert("Comunicado guardado correctamente.");
+
+      setNuevoComunicado({
+        fecha: hoy,
+        categoria: "",
+        titulo: "",
+        texto: "",
+        destacado: false,
+        publicado: false,
+      });
+
+      if (datos.publicado) {
+        setComunicados((anteriores) => [datos, ...anteriores]);
+      }
+    } catch (error) {
+      console.error("Error al guardar comunicado:", error);
+      alert(error.message);
+    }
+  };
+
   return (
     <main className="pagina">
-      <section className="hero" id="inicio">
+      <section
+        className={`hero ${seccionActiva !== "inicio" ? "hero-solo-menu" : ""}`}
+        id="inicio"
+      >
         <header className="barra-superior">
           <div className="marca">
             <img src={logoListaVerde} alt="Logo Lista Verde" />
@@ -713,27 +831,63 @@ function App() {
           </button>
 
           <nav className={`menu ${menuMovilAbierto ? "menu-abierto" : ""}`}>
-            <a href="#inicio" onClick={() => setMenuMovilAbierto(false)}>
+            <a
+              href="#inicio"
+              onClick={() => {
+                setSeccionActiva("inicio");
+                setMenuMovilAbierto(false);
+              }}
+            >
               Inicio
             </a>
 
-            <a href="#quienes-somos" onClick={() => setMenuMovilAbierto(false)}>
+            <a
+              href="#quienes-somos"
+              onClick={() => {
+                setSeccionActiva("quienes-somos");
+                setMenuMovilAbierto(false);
+              }}
+            >
               Quiénes somos
             </a>
 
-            <a href="#comunicados" onClick={() => setMenuMovilAbierto(false)}>
+            <a
+              href="#comunicados"
+              onClick={() => {
+                setSeccionActiva("comunicados");
+                setMenuMovilAbierto(false);
+              }}
+            >
               Comunicados
             </a>
 
-            <a href="#derechos" onClick={() => setMenuMovilAbierto(false)}>
+            <a
+              href="#derechos"
+              onClick={() => {
+                setSeccionActiva("derechos");
+                setMenuMovilAbierto(false);
+              }}
+            >
               Derechos
             </a>
 
-            <a href="#proyectos" onClick={() => setMenuMovilAbierto(false)}>
+            <a
+              href="#proyectos"
+              onClick={() => {
+                setSeccionActiva("proyectos");
+                setMenuMovilAbierto(false);
+              }}
+            >
               Proyectos
             </a>
 
-            <a href="#participa" onClick={() => setMenuMovilAbierto(false)}>
+            <a
+              href="#participa"
+              onClick={() => {
+                setSeccionActiva("participa");
+                setMenuMovilAbierto(false);
+              }}
+            >
               Participá
             </a>
 
@@ -743,15 +897,33 @@ function App() {
               </button>
 
               <div className="submenu">
-                <a href="#estatuto" onClick={() => setMenuMovilAbierto(false)}>
+                <a
+                  href="#estatuto"
+                  onClick={() => {
+                    setSeccionActiva("estatuto");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
                   Estatuto
                 </a>
 
-                <a href="#manual" onClick={() => setMenuMovilAbierto(false)}>
+                <a
+                  href="#manual"
+                  onClick={() => {
+                    setSeccionActiva("manual");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
                   Manual Digital
                 </a>
 
-                <a href="#galeria" onClick={() => setMenuMovilAbierto(false)}>
+                <a
+                  href="#galeria"
+                  onClick={() => {
+                    setSeccionActiva("galeria");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
                   Galería
                 </a>
               </div>
@@ -761,1215 +933,1431 @@ function App() {
           <a
             href="#gestion"
             className="boton-gestion"
-            onClick={() => setMenuMovilAbierto(false)}
+            onClick={() => {
+              setSeccionActiva("gestion");
+              setMenuMovilAbierto(false);
+            }}
           >
             🔒 Gestión
           </a>
         </header>
 
-        <div className="forma forma-1"></div>
-        <div className="forma forma-2"></div>
-        <div className="forma forma-3"></div>
-
-        <div className="hero-contenido">
-          <img
-            src={logoListaVerde}
-            alt="Logo Centro de Estudiantes Lista Verde"
-            className="logo-principal"
-          />
-
-          <p className="etiqueta">CENTRO DE ESTUDIANTES</p>
-
-          <h1>E.E.S. N.º 50</h1>
-
-          <h2>“Luis Alberto Spinetta”</h2>
-
-          <p className="ubicacion">Morón · Orientación en Música</p>
-
-          <p className="frase">
-            Una escuela también se construye con la voz de sus estudiantes.
-          </p>
-
-          <a
-            className="scroll"
-            href="#quienes-somos"
-            onClick={() => setMenuMovilAbierto(false)}
-          >
-            ↓<span>DESLIZÁ PARA DESCUBRIR</span>
-          </a>
-        </div>
-
-        <div className="mensaje-lateral mensaje-izq">
-          misma escuela
-          <br />
-          más voces ♡
-        </div>
-
-        <div className="mensaje-lateral mensaje-der">
-          IDEAS
-          <br />
-          ESTUDIANTES
-          <br />
-          ACCIONES
-          <br />
-          REALES ♡
-        </div>
-
-        <div className="musica">♫ ♪ ♬</div>
-
-        <div className="redes">
-          <a
-            href="https://www.instagram.com/ListaVerde_ees50"
-            target="_blank"
-            rel="noreferrer"
-          >
-            ◎ ListaVerde_ees50
-          </a>
-
-          <a href="mailto:listaverde.eesn50@gmail.com">
-            ✉ listaverde.eesn50@gmail.com
-          </a>
-        </div>
-
-        <div className="palabras">CULTURA · MÚSICA · ENCUENTRO · COMUNIDAD</div>
-      </section>
-
-      <section className="quienes" id="quienes-somos">
-        <div className="quienes-encabezado">
-          <span className="mini-titulo">NUESTRO CENTRO</span>
-
-          <h2>Quiénes somos</h2>
-
-          <p>
-            Somos estudiantes de la E.E.S. N.º 50 “Luis Alberto Spinetta” que
-            elegimos participar, escuchar y transformar nuestras ideas en
-            acciones para toda la comunidad estudiantil.
-          </p>
-        </div>
-
-        <div className="comision">
-          <article className="integrante presidenta">
-            <span className="cargo">PRESIDENTA</span>
-            <h3>Flores Sarah</h3>
-            <p>5° A</p>
-          </article>
-
-          <article className="integrante vicepresidenta">
-            <span className="cargo">VICEPRESIDENTA</span>
-            <h3>Noir Marlene</h3>
-            <p>5° A</p>
-          </article>
-
-          <article className="integrante">
-            <span className="cargo">SECRETARIO</span>
-            <h3>Tortorello Ashley</h3>
-            <p>5° B</p>
-          </article>
-
-          <article className="integrante">
-            <span className="cargo">TESORERA</span>
-            <h3>Jimenez Sofía</h3>
-            <p>5° A</p>
-          </article>
-        </div>
-
-        <div className="vocales-bloque">
-          <h3>Vocales</h3>
-
-          <div className="vocales">
-            <article className="vocal">
-              <h4>Ortiz Blanca</h4>
-              <p>5° A</p>
-            </article>
-
-            <article className="vocal">
-              <h4>Montenegro Bianca</h4>
-              <p>4° A</p>
-            </article>
-
-            <article className="vocal">
-              <h4>Escobar Martina</h4>
-              <p>5° B</p>
-            </article>
-          </div>
-        </div>
-
-        <p className="lema-equipo">Distintas voces. Un mismo Centro. 💚</p>
-      </section>
-
-      <section className="comunicados" id="comunicados">
-        <div className="comunicados-encabezado">
-          <span className="mini-titulo">LO ÚLTIMO DEL CENTRO</span>
-          <h2>Comunicados & Novedades</h2>
-          <p>
-            Todo lo que está pasando, lo que se viene y lo que queremos
-            compartir con la comunidad estudiantil.
-          </p>
-        </div>
-
-        <article className="novedad-destacada">
-          <div className="novedad-destacada-contenido">
-            <div className="novedad-meta">
-              <span>04 SEP 2026</span>
-              <span>·</span>
-              <span>CENTRO DE ESTUDIANTES</span>
-            </div>
-
-            <h3>¡Tenemos nueva página!</h3>
-
-            <p>
-              Comenzamos a construir nuestro espacio digital para informar,
-              escuchar, compartir proyectos y fortalecer la participación de
-              todos los estudiantes de la E.E.S. N.º 50.
-            </p>
-
-            <span className="etiqueta-novedad">DESTACADA</span>
-          </div>
-
-          <div className="novedad-decoracion">📣</div>
-        </article>
-
-        <div className="novedades-grid">
-          <article className="novedad-card">
-            <div className="novedad-meta">
-              <span>PRÓXIMAMENTE</span>
-              <span>·</span>
-              <span>PROYECTOS</span>
-            </div>
-
-            <h3>Nuevas propuestas</h3>
-
-            <p>
-              En este espacio vamos a compartir las actividades y proyectos que
-              iremos llevando adelante.
-            </p>
-          </article>
-
-          <article className="novedad-card">
-            <div className="novedad-meta">
-              <span>PRÓXIMAMENTE</span>
-              <span>·</span>
-              <span>PARTICIPACIÓN</span>
-            </div>
-
-            <h3>Tu voz también cuenta</h3>
-
-            <p>
-              Muy pronto vas a poder dejar ideas, preguntas, propuestas o
-              inquietudes desde nuestro buzón estudiantil.
-            </p>
-          </article>
-
-          <article className="novedad-card">
-            <div className="novedad-meta">
-              <span>PRÓXIMAMENTE</span>
-              <span>·</span>
-              <span>INSTRUMENTOS</span>
-            </div>
-
-            <h3>Manual digital</h3>
-
-            <p>
-              Manual para armar/desarmar cada instrumento y equipo de sonido
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section className="estatuto" id="estatuto">
-        <div className="estatuto-encabezado">
-          <span className="mini-titulo">NUESTRAS REGLAS · NUESTRO ESPACIO</span>
-
-          <h2>Estatuto</h2>
-
-          <p>
-            El Estatuto establece cómo se organiza y funciona nuestro Centro de
-            Estudiantes, cuáles son sus objetivos y de qué manera podemos
-            participar.
-          </p>
-        </div>
-
-        <div className="estatuto-grid">
-          <article className="estatuto-card">
-            <span className="estatuto-icono">✦</span>
-            <h3>Participar</h3>
-            <p>
-              Crear un espacio de acción, participación y representación para
-              los estudiantes.
-            </p>
-          </article>
-
-          <article className="estatuto-card">
-            <span className="estatuto-icono">♡</span>
-            <h3>Representar</h3>
-            <p>
-              Escuchar necesidades, inquietudes, propuestas y problemáticas de
-              la comunidad estudiantil.
-            </p>
-          </article>
-
-          <article className="estatuto-card">
-            <span className="estatuto-icono">✓</span>
-            <h3>Elegir</h3>
-            <p>
-              Todos los estudiantes regulares tienen derecho a participar y
-              ejercer su voto según lo establecido en el Estatuto.
-            </p>
-          </article>
-
-          <article className="estatuto-card">
-            <span className="estatuto-icono">$</span>
-            <h3>Ser transparentes</h3>
-            <p>
-              Los ingresos y egresos del Centro deben registrarse y presentarse
-              en un balance.
-            </p>
-          </article>
-        </div>
-
-        <div className="estatuto-documento">
-          <div>
-            <span className="documento-etiqueta">DOCUMENTO OFICIAL</span>
-
-            <h3>Estatuto del Centro de Estudiantes</h3>
-
-            <p>E.E.S. N.º 50 · Morón</p>
-          </div>
-
-          <div className="estatuto-botones">
-            <a
-              href="/documentos/estatuto-centro-estudiantes.pdf"
-              target="_blank"
-              rel="noreferrer"
-              className="boton-estatuto principal"
-            >
-              📖 Leer Estatuto
-            </a>
-
-            <a
-              href="/documentos/estatuto-centro-estudiantes.pdf"
-              download
-              className="boton-estatuto"
-            >
-              ↓ Descargar PDF
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section className="derechos" id="derechos">
-        <div className="derechos-encabezado">
-          <span className="mini-titulo">
-            CONOCER · PARTICIPAR · HACER VALER
-          </span>
-
-          <h2>Derechos del estudiante</h2>
-
-          <p>
-            Conocer nuestros derechos también es una forma de participar,
-            cuidarnos y construir una escuela más justa.
-          </p>
-        </div>
-
-        <div className="derechos-grid">
-          <article className="derecho-card">
-            <span className="derecho-icono">💬</span>
-            <h3>Ser escuchado</h3>
-            <p>
-              Poder expresar opiniones, propuestas, dudas e inquietudes dentro
-              de la comunidad educativa.
-            </p>
-          </article>
-
-          <article className="derecho-card">
-            <span className="derecho-icono">🤝</span>
-            <h3>Recibir un trato respetuoso</h3>
-            <p>Ser tratado con respeto, sin discriminación ni violencia.</p>
-          </article>
-
-          <article className="derecho-card">
-            <span className="derecho-icono">📚</span>
-            <h3>Aprender</h3>
-            <p>
-              Acceder a una educación que acompañe, enseñe y favorezca la
-              continuidad de las trayectorias escolares.
-            </p>
-          </article>
-
-          <article className="derecho-card">
-            <span className="derecho-icono">✋</span>
-            <h3>Participar</h3>
-            <p>
-              Formar parte de actividades, proyectos, elecciones y espacios de
-              participación estudiantil.
-            </p>
-          </article>
-
-          <article className="derecho-card">
-            <span className="derecho-icono">🗳️</span>
-            <h3>Elegir representantes</h3>
-            <p>
-              Participar en la vida democrática del Centro de Estudiantes y
-              ejercer el derecho al voto.
-            </p>
-          </article>
-
-          <article className="derecho-card">
-            <span className="derecho-icono">🌱</span>
-            <h3>Convivir en un ambiente cuidado</h3>
-            <p>
-              Aprender y participar en un entorno que promueva el respeto, la
-              convivencia y el bienestar.
-            </p>
-          </article>
-        </div>
-
-        <div className="derechos-destacado">
-          <div>
-            <span className="documento-etiqueta">
-              UN DERECHO TAMBIÉN ES UNA VOZ
-            </span>
-
-            <h3>¿Tenés una duda o querés contar algo?</h3>
-
-            <p>
-              Podés usar nuestro espacio de participación para acercar
-              preguntas, ideas, propuestas o inquietudes.
-            </p>
-          </div>
-
-          <a href="#participa" className="boton-derechos">
-            Ir a Participá →
-          </a>
-        </div>
-      </section>
-
-      <section className="proyectos" id="proyectos">
-        <div className="proyectos-encabezado">
-          <span className="mini-titulo">DE LAS IDEAS A LA ACCIÓN</span>
-
-          <h2>Proyectos</h2>
-
-          <p>
-            Acá vamos a mostrar las propuestas del Centro, en qué etapa están y
-            cómo van avanzando.
-          </p>
-        </div>
-
-        <div className="proyectos-etapas">
-          <div className="etapa">
-            <span className="etapa-icono">💡</span>
-            <strong>Idea</strong>
-            <span>Todo empieza con una propuesta.</span>
-          </div>
-
-          <div className="etapa">
-            <span className="etapa-icono">📝</span>
-            <strong>Planificación</strong>
-            <span>Organizamos tareas, tiempos y responsables.</span>
-          </div>
-
-          <div className="etapa">
-            <span className="etapa-icono">🟡</span>
-            <strong>En marcha</strong>
-            <span>La propuesta ya se está realizando.</span>
-          </div>
-
-          <div className="etapa">
-            <span className="etapa-icono">✅</span>
-            <strong>Realizado</strong>
-            <span>Proyecto terminado y compartido.</span>
-          </div>
-        </div>
-
-        <div className="proyectos-grid">
-          <article className="proyecto-card">
-            <div className="proyecto-estado estado-en-marcha">🟡 EN MARCHA</div>
-
-            <h3>Manual Digital del Estudiante</h3>
-
-            <p>
-              Un espacio pensado donde accedés a un manual para armar/desarmar
-              cada instrumento y equipo de sonido
-            </p>
-
-            <div className="proyecto-pie">
-              <span>Responsable</span>
-              <strong>Ashley Tortorello</strong>
-            </div>
-          </article>
-
-          <article className="proyecto-card">
-            <div className="proyecto-estado estado-idea">💡 IDEA</div>
-
-            <h3>Nuevas propuestas estudiantiles</h3>
-
-            <p>
-              Las ideas que surjan de estudiantes y cursos podrán convertirse en
-              nuevos proyectos del Centro.
-            </p>
-
-            <div className="proyecto-pie">
-              <span>Participación</span>
-              <strong>Abierta a toda la escuela</strong>
-            </div>
-          </article>
-
-          <article className="proyecto-card proyecto-vacio">
-            <span className="proyecto-mas">＋</span>
-
-            <h3>Próximo proyecto</h3>
-
-            <p>
-              Este espacio se irá completando con las nuevas iniciativas del
-              Centro de Estudiantes.
-            </p>
-          </article>
-        </div>
-
-        <div className="proyectos-frase">
-          <span>IDEAS</span>
-          <span>+</span>
-          <span>ORGANIZACIÓN</span>
-          <span>+</span>
-          <span>PARTICIPACIÓN</span>
-          <span>=</span>
-          <strong>ACCIÓN</strong>
-        </div>
-      </section>
-
-      <section className="participa" id="participa">
-        <div className="participa-encabezado">
-          <span className="mini-titulo">ESTE ESPACIO TAMBIÉN ES TUYO</span>
-
-          <h2>Participá</h2>
-
-          <p>
-            ¿Tenés una idea, una pregunta, una propuesta o algo que te preocupa?
-            Este es un espacio para que puedas hacerlo llegar al Centro de
-            Estudiantes.
-          </p>
-        </div>
-
-        <div className="participa-contenido">
-          <div className="participa-info">
-            <span className="participa-sello">TU VOZ CUENTA ♡</span>
-
-            <h3>Te escuchamos.</h3>
-
-            <p>
-              No necesitás poner tu nombre. Elegí tu curso, contanos qué tipo de
-              mensaje querés dejar y escribí lo que necesites decir.
-            </p>
-
-            <div className="participa-opciones">
-              <span>💡 Idea</span>
-              <span>❓ Pregunta</span>
-              <span>💬 Sugerencia</span>
-              <span>📣 Propuesta</span>
-              <span>⚠️ Queja / inquietud</span>
-            </div>
-
-            <p className="participa-aclaracion">
-              El mensaje será recibido por el Centro de Estudiantes.
-            </p>
-          </div>
-
-          <form className="buzon-formulario" onSubmit={enviarParticipacion}>
-            <div className="campo-formulario">
-              <label htmlFor="curso">¿De qué curso sos?</label>
-
-              <select
-                id="curso"
-                name="curso"
-                value={participacion.curso}
-                onChange={(e) =>
-                  setParticipacion({
-                    ...participacion,
-                    curso: e.target.value,
-                  })
-                }
-              >
-                <option value="" disabled>
-                  Elegí tu curso
-                </option>
-
-                <option value="1° A">1° A</option>
-                <option value="1° B">1° B</option>
-                <option value="2° A">2° A</option>
-                <option value="2° B">2° B</option>
-                <option value="3° A">3° A</option>
-                <option value="3° B">3° B</option>
-                <option value="4° A">4° A</option>
-                <option value="4° B">4° B</option>
-                <option value="5° A">5° A</option>
-                <option value="5° B">5° B</option>
-                <option value="6° A">6° A</option>
-                <option value="6° B">6° B</option>
-              </select>
-            </div>
-
-            <div className="campo-formulario">
-              <label htmlFor="tipoMensaje">¿Qué querés compartir?</label>
-
-              <select
-                id="tipoMensaje"
-                name="tipoMensaje"
-                value={participacion.motivo}
-                onChange={(e) =>
-                  setParticipacion({
-                    ...participacion,
-                    motivo: e.target.value,
-                  })
-                }
-              >
-                <option value="" disabled>
-                  Elegí una opción
-                </option>
-
-                <option value="Idea">Idea</option>
-                <option value="Pregunta">Pregunta</option>
-                <option value="Sugerencia">Sugerencia</option>
-                <option value="Propuesta">Propuesta</option>
-                <option value="Queja / inquietud">Queja / inquietud</option>
-              </select>
-            </div>
-
-            <div className="campo-formulario">
-              <label htmlFor="mensaje">Escribí tu mensaje</label>
-
-              <textarea
-                id="mensaje"
-                name="mensaje"
-                rows="6"
-                placeholder="Este espacio es para vos..."
-                value={participacion.mensaje}
-                onChange={(e) =>
-                  setParticipacion({
-                    ...participacion,
-                    mensaje: e.target.value,
-                  })
-                }
-              ></textarea>
-            </div>
-
-            {errorParticipacion && (
-              <p className="participa-error">{errorParticipacion}</p>
-            )}
-
-            {mensajeParticipacion && (
-              <p className="participa-exito">{mensajeParticipacion}</p>
-            )}
-
-            <button type="submit" className="boton-enviar-mensaje">
-              Enviar al Centro
-              <span>→</span>
-            </button>
-
-            <p className="formulario-nota">
-              No te pedimos nombre ni datos personales.
-            </p>
-          </form>
-        </div>
-
-        <div className="participa-frase">
-          <span>ESCUCHAR</span>
-          <span>·</span>
-          <span>PROPONER</span>
-          <span>·</span>
-          <span>PARTICIPAR</span>
-          <span>·</span>
-          <strong>CONSTRUIR</strong>
-        </div>
-      </section>
-
-      <section className="manual" id="manual">
-        <div className="manual-encabezado">
-          <span className="mini-titulo">UNA GUÍA HECHA POR ESTUDIANTES</span>
-
-          <h2>Manual Digital</h2>
-
-          <p>
-            Un espacio pensado para reunir información útil, clara y accesible
-            para toda la comunidad estudiantil.
-          </p>
-        </div>
-
-        <div className="manual-destacado">
-          <div className="manual-destacado-texto">
-            <span className="manual-sello">EN CONSTRUCCIÓN</span>
-
-            <h4>
-              MANUAL DIGITAL PARA EL CUIDADO Y MANTENIMIENTO DE INSTRUMENTOS
-              MUSICALES
-            </h4>
-
-            <p>
-              Este proyecto es una guía para estudiantes y profesores destinada
-              a los instrumentos musicales y la organización del pañol.
-            </p>
-
-            <div className="manual-autoria">
-              <span>Proyecto impulsado por</span>
-              <strong>Ashley Tortorello · Secretarío</strong>
-            </div>
-          </div>
-
-          <div className="manual-icono-grande">📖</div>
-        </div>
-
-        <div className="manual-capitulos">
-          <article className="manual-card activo">
-            <span className="manual-numero">01</span>
-            <h3>El Centro de Estudiantes</h3>
-            <p>Qué es, para qué sirve y cómo podés participar.</p>
-            <span className="manual-estado">Próximamente</span>
-          </article>
-
-          <article className="manual-card">
-            <span className="manual-numero">02</span>
-            <h3>Derechos del estudiante</h3>
-            <p>Información clara para conocer y ejercer tus derechos.</p>
-            <span className="manual-estado">Próximamente</span>
-          </article>
-
-          <article className="manual-card">
-            <span className="manual-numero">03</span>
-            <h3>Participación</h3>
-            <p>
-              Delegados, asambleas, propuestas y espacios para hacer escuchar tu
-              voz.
-            </p>
-            <span className="manual-estado">Próximamente</span>
-          </article>
-
-          <article className="manual-card">
-            <span className="manual-numero">04</span>
-            <h3>Convivencia</h3>
-            <p>Acuerdos, respeto y herramientas para una mejor vida escolar.</p>
-            <span className="manual-estado">Próximamente</span>
-          </article>
-
-          <article className="manual-card">
-            <span className="manual-numero">05</span>
-            <h3>¿A quién recurro?</h3>
-            <p>
-              Orientaciones para saber dónde acudir ante dudas o situaciones
-              escolares.
-            </p>
-            <span className="manual-estado">Próximamente</span>
-          </article>
-
-          <article className="manual-card">
-            <span className="manual-numero">06</span>
-            <h3>Información útil</h3>
-            <p>Recursos, contactos y herramientas que iremos sumando.</p>
-            <span className="manual-estado">Próximamente</span>
-          </article>
-        </div>
-      </section>
-
-      <section className="galeria" id="galeria">
-        <div className="galeria-encabezado">
-          <span className="mini-titulo">MOMENTOS QUE CONSTRUYEN HISTORIA</span>
-
-          <h2>Galería</h2>
-
-          <p>
-            Fotos, videos y recuerdos de las actividades del Centro de
-            Estudiantes.
-          </p>
-        </div>
-
-        <div className="galeria-grid">
-          <article className="galeria-card">
-            <div className="galeria-imagen galeria-imagen-1">
-              <span>PRÓXIMAMENTE</span>
-            </div>
-
-            <div className="galeria-contenido">
-              <div className="galeria-meta">
-                <span>SEPTIEMBRE 2026</span>
-                <span>·</span>
-                <span>CENTRO DE ESTUDIANTES</span>
-              </div>
-
-              <h3>Primeros pasos</h3>
-
-              <p>
-                Los primeros encuentros, ideas y momentos de esta nueva etapa.
-              </p>
-
-              <button className="galeria-boton" type="button">
-                Ver actividad →
-              </button>
-            </div>
-          </article>
-
-          <article className="galeria-card">
-            <div className="galeria-imagen galeria-imagen-2">
-              <span>FOTOS</span>
-            </div>
-
-            <div className="galeria-contenido">
-              <div className="galeria-meta">
-                <span>PRÓXIMAMENTE</span>
-                <span>·</span>
-                <span>ACTIVIDADES</span>
-              </div>
-
-              <h3>Vida estudiantil</h3>
-
-              <p>
-                Jornadas, encuentros, propuestas y actividades de nuestra
-                comunidad.
-              </p>
-
-              <button className="galeria-boton" type="button">
-                Ver fotos →
-              </button>
-            </div>
-          </article>
-
-          <article className="galeria-card">
-            <div className="galeria-imagen galeria-imagen-3">
-              <span>VIDEOS</span>
-            </div>
-
-            <div className="galeria-contenido">
-              <div className="galeria-meta">
-                <span>PRÓXIMAMENTE</span>
-                <span>·</span>
-                <span>MÚSICA</span>
-              </div>
-
-              <h3>Nuestra escuela suena</h3>
-
-              <p>
-                Presentaciones, música y momentos que reflejan la identidad de
-                la E.E.S. N.º 50.
-              </p>
-
-              <button className="galeria-boton" type="button">
-                Ver videos →
-              </button>
-            </div>
-          </article>
-        </div>
-
-        <div className="galeria-destacado">
-          <div>
-            <span className="documento-etiqueta">
-              UNA HISTORIA QUE RECIÉN EMPIEZA
-            </span>
-
-            <h3>Cada proyecto también deja recuerdos.</h3>
-
-            <p>
-              Esta galería va a crecer con cada actividad, encuentro y propuesta
-              del Centro.
-            </p>
-          </div>
-
-          <span className="galeria-icono">📷</span>
-        </div>
-      </section>
-
-      <section className="gestion" id="gestion">
-        <div className="gestion-encabezado">
-          <span className="gestion-etiqueta">🔒 ESPACIO DE ADMINISTRACIÓN</span>
-          {gestionAutorizada && (
-            <button
-              type="button"
-              className="gestion-cerrar-superior"
-              onClick={cerrarSesionGestion}
-            >
-              🔓 Cerrar sesión
-            </button>
-          )}
-
-          <h2>Gestión</h2>
-
-          <p>
-            Desde acá el Centro de Estudiantes podrá administrar el contenido de
-            la página y llevar adelante su organización interna.
-          </p>
-        </div>
-
-        {!gestionAutorizada ? (
-          <div className="gestion-login">
-            <div className="gestion-login-icono">🔐</div>
-
-            <span className="gestion-login-etiqueta">ACCESO PRIVADO</span>
-
-            <h3>Ingresar a Gestión</h3>
-
-            <p>
-              Este espacio es exclusivo para integrantes autorizados del Centro
-              de Estudiantes.
-            </p>
-
-            <form
-              className="gestion-login-form"
-              onSubmit={iniciarSesionGestion}
-            >
-              <div className="gestion-login-campo">
-                <label htmlFor="usuarioGestion">Usuario</label>
-
-                <input
-                  id="usuarioGestion"
-                  type="text"
-                  value={loginGestion.usuario}
-                  onChange={(e) =>
-                    setLoginGestion({
-                      ...loginGestion,
-                      usuario: e.target.value,
-                    })
-                  }
-                  autoComplete="username"
-                  placeholder="Usuario de Gestión"
-                />
-              </div>
-
-              <div className="gestion-login-campo">
-                <label htmlFor="passwordGestion">Contraseña</label>
-
-                <div className="password-contenedor">
-                  <input
-                    id="passwordGestion"
-                    type={mostrarPassword ? "text" : "password"}
-                    value={loginGestion.password}
-                    onChange={(e) =>
-                      setLoginGestion({
-                        ...loginGestion,
-                        password: e.target.value,
-                      })
-                    }
-                    autoComplete="current-password"
-                    placeholder="Contraseña"
-                  />
-
-                  <button
-                    type="button"
-                    className="password-ojo"
-                    onClick={() => setMostrarPassword(!mostrarPassword)}
-                    aria-label={
-                      mostrarPassword
-                        ? "Ocultar contraseña"
-                        : "Mostrar contraseña"
-                    }
-                    title={
-                      mostrarPassword
-                        ? "Ocultar contraseña"
-                        : "Mostrar contraseña"
-                    }
-                  >
-                    {mostrarPassword ? "👀" : "🙈"}
-                  </button>
-                </div>
-              </div>
-
-              {errorLogin && (
-                <p className="gestion-login-error">{errorLogin}</p>
-              )}
-
-              <button type="submit" className="gestion-login-boton">
-                Entrar a Gestión
-                <span>→</span>
-              </button>
-            </form>
-          </div>
-        ) : (
+        {seccionActiva === "inicio" && (
           <>
-            <div className="gestion-aviso">
-              <div className="gestion-aviso-icono">🐢</div>
+            <div className="forma forma-1"></div>
+            <div className="forma forma-2"></div>
+            <div className="forma forma-3"></div>
 
-              <div>
-                <span>ÁREA PRIVADA</span>
+            <div className="hero-contenido">
+              <img
+                src={logoListaVerde}
+                alt="Logo Centro de Estudiantes Lista Verde"
+                className="logo-principal"
+              />
 
-                <h3>Panel del Centro de Estudiantes</h3>
+              <p className="etiqueta">CENTRO DE ESTUDIANTES</p>
 
-                <p>
-                  Este espacio será de acceso exclusivo para las personas
-                  autorizadas del Centro.
-                </p>
-              </div>
+              <h1>E.E.S. N.º 50</h1>
+
+              <h2>“Luis Alberto Spinetta”</h2>
+
+              <p className="ubicacion">Morón · Orientación en Música</p>
+
+              <p className="frase">
+                Una escuela también se construye con la voz de sus estudiantes.
+              </p>
+
+              <a
+                className="scroll"
+                href="#quienes-somos"
+                onClick={() => {
+                  setSeccionActiva("quienes-somos");
+                  setMenuMovilAbierto(false);
+                }}
+              >
+                ↓<span>DESLIZÁ PARA DESCUBRIR</span>
+              </a>
             </div>
 
-            <div className="gestion-grid">
-              <article className="gestion-card">
-                <span className="gestion-icono">📣</span>
-
-                <div>
-                  <span className="gestion-numero">01</span>
-
-                  <h3>Comunicados</h3>
-
-                  <p>
-                    Crear, editar, destacar o retirar novedades de la página.
-                  </p>
-                </div>
-
-                <button type="button">Administrar →</button>
-              </article>
-
-              <article className="gestion-card">
-                <span className="gestion-icono">💡</span>
-
-                <div>
-                  <span className="gestion-numero">02</span>
-
-                  <h3>Proyectos</h3>
-
-                  <p>Registrar proyectos y actualizar su estado y avances.</p>
-                </div>
-
-                <button type="button">Administrar →</button>
-              </article>
-
-              <article className="gestion-card">
-                <div className="gestion-icono-con-aviso">
-                  <span className="gestion-icono">💬</span>
-
-                  {cantidadMensajesNuevos > 0 && (
-                    <span className="gestion-notificacion">
-                      {cantidadMensajesNuevos}
-                    </span>
-                  )}
-                </div>
-
-                <div>
-                  <span className="gestion-numero">03</span>
-
-                  <h3>Buzón estudiantil</h3>
-
-                  <p>Leer mensajes y organizar su seguimiento.</p>
-                </div>
-
-                <button type="button" onClick={abrirBuzon}>
-                  Ver mensajes →
-                </button>
-              </article>
-
-              <article className="gestion-card">
-                <span className="gestion-icono">📷</span>
-
-                <div>
-                  <span className="gestion-numero">04</span>
-
-                  <h3>Galería</h3>
-
-                  <p>Cargar fotografías, videos y nuevas actividades.</p>
-                </div>
-
-                <button type="button">Administrar →</button>
-              </article>
-
-              <article className="gestion-card">
-                <span className="gestion-icono">📖</span>
-
-                <div>
-                  <span className="gestion-numero">05</span>
-
-                  <h3>Manual Digital</h3>
-
-                  <p>Incorporar y actualizar los capítulos del Manual.</p>
-                </div>
-
-                <button type="button">Administrar →</button>
-              </article>
-
-              <article className="gestion-card gestion-card-tesoreria">
-                <span className="gestion-icono">💰</span>
-
-                <div>
-                  <span className="gestion-numero">06</span>
-
-                  <h3>Tesorería</h3>
-
-                  <p>
-                    Registrar ingresos y egresos, emitir recibos y consultar el
-                    balance del Centro.
-                  </p>
-
-                  <div className="gestion-mini-datos">
-                    <span>INGRESOS</span>
-                    <span>EGRESOS</span>
-                    <span>BALANCE</span>
-                    <span>RECIBOS</span>
-                  </div>
-                </div>
-
-                <a href="#tesoreria" className="boton-ir-tesoreria">
-                  Ir a Tesorería →
-                </a>
-              </article>
+            <div className="mensaje-lateral mensaje-izq">
+              misma escuela
+              <br />
+              más voces ♡
             </div>
 
-            {mostrarBuzon && (
-              <section className="buzon-gestion" id="buzon-gestion">
-                <div className="buzon-gestion-header">
-                  <div>
-                    <span className="buzon-gestion-etiqueta">💬 PARTICIPÁ</span>
-
-                    <h3>Buzón estudiantil</h3>
-
-                    <p>
-                      Mensajes enviados por estudiantes para que el Centro pueda
-                      leerlos y organizar su seguimiento.
-                    </p>
-                  </div>
-
-                  <span className="buzon-total">
-                    {participacionesGestion.length} mensajes
-                  </span>
-                </div>
-
-                {participacionesGestion.length === 0 ? (
-                  <div className="buzon-vacio">
-                    <span>🐢</span>
-                    <h4>No hay mensajes todavía</h4>
-                    <p>
-                      Cuando un estudiante participe, su mensaje aparecerá acá.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="buzon-tarjetas">
-                    {participacionesGestion.map((participacion) => (
-                      <article
-                        className="buzon-mensaje-card"
-                        key={participacion._id}
-                      >
-                        <div className="buzon-mensaje-superior">
-                          <div className="buzon-tags">
-                            <span className="buzon-curso">
-                              🎓 {participacion.curso}
-                            </span>
-
-                            <span className="buzon-motivo">
-                              {participacion.motivo}
-                            </span>
-                          </div>
-
-                          <span
-                            className={`buzon-estado estado-${participacion.estado
-                              .toLowerCase()
-                              .replaceAll(" ", "-")
-                              .replace("í", "i")}`}
-                          >
-                            {participacion.estado === "Nuevo"
-                              ? "No leído"
-                              : participacion.estado}
-                          </span>
-                        </div>
-
-                        <div className="buzon-texto">
-                          <p>{participacion.mensaje}</p>
-                        </div>
-
-                        <div className="buzon-estado-acciones">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              cambiarEstadoParticipacion(
-                                participacion._id,
-                                "Nuevo",
-                              )
-                            }
-                          >
-                            ↩ No leído
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              cambiarEstadoParticipacion(
-                                participacion._id,
-                                "Leído",
-                              )
-                            }
-                          >
-                            👁 Leído
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              cambiarEstadoParticipacion(
-                                participacion._id,
-                                "En tratamiento",
-                              )
-                            }
-                          >
-                            ⚙ En tratamiento
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              cambiarEstadoParticipacion(
-                                participacion._id,
-                                "Resuelto",
-                              )
-                            }
-                          >
-                            ✅ Resuelto
-                          </button>
-                        </div>
-                        <div className="buzon-eliminar-contenedor">
-                          <button
-                            type="button"
-                            className="buzon-eliminar"
-                            onClick={() =>
-                              eliminarParticipacion(participacion._id)
-                            }
-                          >
-                            🗑️ Eliminar mensaje
-                          </button>
-                        </div>
-
-                        <div className="buzon-mensaje-pie">
-                          <div className="buzon-tortuguita">
-                            🐢
-                            <span>¡Gracias por participar!</span>
-                          </div>
-
-                          <small>
-                            {new Date(participacion.createdAt).toLocaleString(
-                              "es-AR",
-                            )}
-                          </small>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-
-            <div className="gestion-pie">
-              <div>
-                <span>PRÓXIMA ETAPA</span>
-
-                <h3>De una página linda a un sistema de gestión real.</h3>
-
-                <p>
-                  Los datos quedarán guardados y podrán administrarse sin
-                  modificar el código de la página.
-                </p>
-              </div>
-
-              <span className="gestion-pie-icono">♫</span>
+            <div className="mensaje-lateral mensaje-der">
+              IDEAS
+              <br />
+              ESTUDIANTES
+              <br />
+              ACCIONES
+              <br />
+              REALES ♡
             </div>
 
-            <div className="gestion-sesion">
-              <span>🔓 Sesión de Gestión iniciada</span>
+            <div className="musica">♫ ♪ ♬</div>
+
+            <div className="redes">
+              <a
+                href="https://www.instagram.com/ListaVerde_ees50"
+                target="_blank"
+                rel="noreferrer"
+              >
+                ◎ ListaVerde_ees50
+              </a>
+
+              <a href="mailto:listaverde.eesn50@gmail.com">
+                ✉ listaverde.eesn50@gmail.com
+              </a>
+            </div>
+
+            <div className="palabras">
+              CULTURA · MÚSICA · ENCUENTRO · COMUNIDAD
             </div>
           </>
         )}
       </section>
 
-      {gestionAutorizada && (
+      {seccionActiva === "quienes-somos" && (
+        <section className="quienes" id="quienes-somos">
+          <div className="quienes-encabezado">
+            <span className="mini-titulo">NUESTRO CENTRO</span>
+
+            <h2>Quiénes somos</h2>
+
+            <p>
+              Somos estudiantes de la E.E.S. N.º 50 “Luis Alberto Spinetta” que
+              elegimos participar, escuchar y transformar nuestras ideas en
+              acciones para toda la comunidad estudiantil.
+            </p>
+          </div>
+
+          <div className="comision">
+            <article className="integrante presidenta">
+              <span className="cargo">PRESIDENTA</span>
+              <h3>Flores Sarah</h3>
+              <p>5° A</p>
+            </article>
+
+            <article className="integrante vicepresidenta">
+              <span className="cargo">VICEPRESIDENTA</span>
+              <h3>Noir Marlene</h3>
+              <p>5° A</p>
+            </article>
+
+            <article className="integrante">
+              <span className="cargo">SECRETARIO</span>
+              <h3>Tortorello Ashley</h3>
+              <p>5° B</p>
+            </article>
+
+            <article className="integrante">
+              <span className="cargo">TESORERA</span>
+              <h3>Jimenez Sofía</h3>
+              <p>5° A</p>
+            </article>
+          </div>
+
+          <div className="vocales-bloque">
+            <h3>Vocales</h3>
+
+            <div className="vocales">
+              <article className="vocal">
+                <h4>Ortiz Blanca</h4>
+                <p>5° A</p>
+              </article>
+
+              <article className="vocal">
+                <h4>Montenegro Bianca</h4>
+                <p>4° A</p>
+              </article>
+
+              <article className="vocal">
+                <h4>Escobar Martina</h4>
+                <p>5° B</p>
+              </article>
+            </div>
+          </div>
+
+          <p className="lema-equipo">Distintas voces. Un mismo Centro. 💚</p>
+        </section>
+      )}
+      {seccionActiva === "comunicados" && (
+        <section className="comunicados" id="comunicados">
+          <div className="comunicados-encabezado">
+            <span className="mini-titulo">LO ÚLTIMO DEL CENTRO</span>
+
+            <h2>Comunicados & Novedades</h2>
+
+            <p>
+              Todo lo que está pasando, lo que se viene y lo que queremos
+              compartir con la comunidad estudiantil.
+            </p>
+          </div>
+
+          {comunicados.length === 0 ? (
+            <div className="historial-vacio">
+              <span className="historial-icono">📣</span>
+
+              <h4>Todavía no hay comunicados publicados</h4>
+
+              <p>Cuando el Centro publique una novedad, va a aparecer acá.</p>
+            </div>
+          ) : (
+            <>
+              {comunicadoDestacado && (
+                <article className="novedad-destacada">
+                  <div className="novedad-destacada-contenido">
+                    <div className="novedad-meta">
+                      <span>
+                        {new Date(`${comunicadoDestacado.fecha}T00:00:00`)
+                          .toLocaleDateString("es-AR", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
+                          .toUpperCase()}
+                      </span>
+
+                      <span>·</span>
+
+                      <span>{comunicadoDestacado.categoria.toUpperCase()}</span>
+                    </div>
+
+                    <h3>{comunicadoDestacado.titulo}</h3>
+
+                    <p>{comunicadoDestacado.texto}</p>
+
+                    <span className="etiqueta-novedad">DESTACADA</span>
+                  </div>
+
+                  <div className="novedad-decoracion">📣</div>
+                </article>
+              )}
+
+              {comunicadosSecundarios.length > 0 && (
+                <div className="novedades-grid">
+                  {comunicadosSecundarios.map((comunicado) => (
+                    <article className="novedad-card" key={comunicado._id}>
+                      <div className="novedad-meta">
+                        <span>
+                          {new Date(`${comunicado.fecha}T00:00:00`)
+                            .toLocaleDateString("es-AR", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
+                            .toUpperCase()}
+                        </span>
+
+                        <span>·</span>
+
+                        <span>{comunicado.categoria.toUpperCase()}</span>
+                      </div>
+
+                      <h3>{comunicado.titulo}</h3>
+
+                      <p>{comunicado.texto}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {seccionActiva === "estatuto" && (
+        <section className="estatuto" id="estatuto">
+          <div className="estatuto-encabezado">
+            <span className="mini-titulo">
+              NUESTRAS REGLAS · NUESTRO ESPACIO
+            </span>
+
+            <h2>Estatuto</h2>
+
+            <p>
+              El Estatuto establece cómo se organiza y funciona nuestro Centro
+              de Estudiantes, cuáles son sus objetivos y de qué manera podemos
+              participar.
+            </p>
+          </div>
+
+          <div className="estatuto-grid">
+            <article className="estatuto-card">
+              <span className="estatuto-icono">✦</span>
+              <h3>Participar</h3>
+              <p>
+                Crear un espacio de acción, participación y representación para
+                los estudiantes.
+              </p>
+            </article>
+
+            <article className="estatuto-card">
+              <span className="estatuto-icono">♡</span>
+              <h3>Representar</h3>
+              <p>
+                Escuchar necesidades, inquietudes, propuestas y problemáticas de
+                la comunidad estudiantil.
+              </p>
+            </article>
+
+            <article className="estatuto-card">
+              <span className="estatuto-icono">✓</span>
+              <h3>Elegir</h3>
+              <p>
+                Todos los estudiantes regulares tienen derecho a participar y
+                ejercer su voto según lo establecido en el Estatuto.
+              </p>
+            </article>
+
+            <article className="estatuto-card">
+              <span className="estatuto-icono">$</span>
+              <h3>Ser transparentes</h3>
+              <p>
+                Los ingresos y egresos del Centro deben registrarse y
+                presentarse en un balance.
+              </p>
+            </article>
+          </div>
+
+          <div className="estatuto-documento">
+            <div>
+              <span className="documento-etiqueta">DOCUMENTO OFICIAL</span>
+
+              <h3>Estatuto del Centro de Estudiantes</h3>
+
+              <p>E.E.S. N.º 50 · Morón</p>
+            </div>
+
+            <div className="estatuto-botones">
+              <a
+                href="/documentos/estatuto-centro-estudiantes.pdf"
+                target="_blank"
+                rel="noreferrer"
+                className="boton-estatuto principal"
+              >
+                📖 Leer Estatuto
+              </a>
+
+              <a
+                href="/documentos/estatuto-centro-estudiantes.pdf"
+                download
+                className="boton-estatuto"
+              >
+                ↓ Descargar PDF
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {seccionActiva === "derechos" && (
+        <section className="derechos" id="derechos">
+          <div className="derechos-encabezado">
+            <span className="mini-titulo">
+              CONOCER · PARTICIPAR · HACER VALER
+            </span>
+
+            <h2>Derechos del estudiante</h2>
+
+            <p>
+              Conocer nuestros derechos también es una forma de participar,
+              cuidarnos y construir una escuela más justa.
+            </p>
+          </div>
+
+          <div className="derechos-grid">
+            <article className="derecho-card">
+              <span className="derecho-icono">💬</span>
+              <h3>Ser escuchado</h3>
+              <p>
+                Poder expresar opiniones, propuestas, dudas e inquietudes dentro
+                de la comunidad educativa.
+              </p>
+            </article>
+
+            <article className="derecho-card">
+              <span className="derecho-icono">🤝</span>
+              <h3>Recibir un trato respetuoso</h3>
+              <p>Ser tratado con respeto, sin discriminación ni violencia.</p>
+            </article>
+
+            <article className="derecho-card">
+              <span className="derecho-icono">📚</span>
+              <h3>Aprender</h3>
+              <p>
+                Acceder a una educación que acompañe, enseñe y favorezca la
+                continuidad de las trayectorias escolares.
+              </p>
+            </article>
+
+            <article className="derecho-card">
+              <span className="derecho-icono">✋</span>
+              <h3>Participar</h3>
+              <p>
+                Formar parte de actividades, proyectos, elecciones y espacios de
+                participación estudiantil.
+              </p>
+            </article>
+
+            <article className="derecho-card">
+              <span className="derecho-icono">🗳️</span>
+              <h3>Elegir representantes</h3>
+              <p>
+                Participar en la vida democrática del Centro de Estudiantes y
+                ejercer el derecho al voto.
+              </p>
+            </article>
+
+            <article className="derecho-card">
+              <span className="derecho-icono">🌱</span>
+              <h3>Convivir en un ambiente cuidado</h3>
+              <p>
+                Aprender y participar en un entorno que promueva el respeto, la
+                convivencia y el bienestar.
+              </p>
+            </article>
+          </div>
+
+          <div className="derechos-destacado">
+            <div>
+              <span className="documento-etiqueta">
+                UN DERECHO TAMBIÉN ES UNA VOZ
+              </span>
+
+              <h3>¿Tenés una duda o querés contar algo?</h3>
+
+              <p>
+                Podés usar nuestro espacio de participación para acercar
+                preguntas, ideas, propuestas o inquietudes.
+              </p>
+            </div>
+
+            <a
+              href="#participa"
+              className="boton-derechos"
+              onClick={() => {
+                setSeccionActiva("participa");
+                setMenuMovilAbierto(false);
+              }}
+            >
+              Ir a Participá →
+            </a>
+          </div>
+        </section>
+      )}
+
+      {seccionActiva === "proyectos" && (
+        <section className="proyectos" id="proyectos">
+          <div className="proyectos-encabezado">
+            <span className="mini-titulo">DE LAS IDEAS A LA ACCIÓN</span>
+
+            <h2>Proyectos</h2>
+
+            <p>
+              Acá vamos a mostrar las propuestas del Centro, en qué etapa están
+              y cómo van avanzando.
+            </p>
+          </div>
+
+          <div className="proyectos-etapas">
+            <div className="etapa">
+              <span className="etapa-icono">💡</span>
+              <strong>Idea</strong>
+              <span>Todo empieza con una propuesta.</span>
+            </div>
+
+            <div className="etapa">
+              <span className="etapa-icono">📝</span>
+              <strong>Planificación</strong>
+              <span>Organizamos tareas, tiempos y responsables.</span>
+            </div>
+
+            <div className="etapa">
+              <span className="etapa-icono">🟡</span>
+              <strong>En marcha</strong>
+              <span>La propuesta ya se está realizando.</span>
+            </div>
+
+            <div className="etapa">
+              <span className="etapa-icono">✅</span>
+              <strong>Realizado</strong>
+              <span>Proyecto terminado y compartido.</span>
+            </div>
+          </div>
+
+          <div className="proyectos-grid">
+            <article className="proyecto-card">
+              <div className="proyecto-estado estado-en-marcha">
+                🟡 EN MARCHA
+              </div>
+
+              <h3>Manual Digital del Estudiante</h3>
+
+              <p>
+                Un espacio pensado donde accedés a un manual para armar/desarmar
+                cada instrumento y equipo de sonido
+              </p>
+
+              <div className="proyecto-pie">
+                <span>Responsable</span>
+                <strong>Ashley Tortorello</strong>
+              </div>
+            </article>
+
+            <article className="proyecto-card">
+              <div className="proyecto-estado estado-idea">💡 IDEA</div>
+
+              <h3>Nuevas propuestas estudiantiles</h3>
+
+              <p>
+                Las ideas que surjan de estudiantes y cursos podrán convertirse
+                en nuevos proyectos del Centro.
+              </p>
+
+              <div className="proyecto-pie">
+                <span>Participación</span>
+                <strong>Abierta a toda la escuela</strong>
+              </div>
+            </article>
+
+            <article className="proyecto-card proyecto-vacio">
+              <span className="proyecto-mas">＋</span>
+
+              <h3>Próximo proyecto</h3>
+
+              <p>
+                Este espacio se irá completando con las nuevas iniciativas del
+                Centro de Estudiantes.
+              </p>
+            </article>
+          </div>
+
+          <div className="proyectos-frase">
+            <span>IDEAS</span>
+            <span>+</span>
+            <span>ORGANIZACIÓN</span>
+            <span>+</span>
+            <span>PARTICIPACIÓN</span>
+            <span>=</span>
+            <strong>ACCIÓN</strong>
+          </div>
+        </section>
+      )}
+
+      {seccionActiva === "participa" && (
+        <section className="participa" id="participa">
+          <div className="participa-encabezado">
+            <span className="mini-titulo">ESTE ESPACIO TAMBIÉN ES TUYO</span>
+
+            <h2>Participá</h2>
+
+            <p>
+              ¿Tenés una idea, una pregunta, una propuesta o algo que te
+              preocupa? Este es un espacio para que puedas hacerlo llegar al
+              Centro de Estudiantes.
+            </p>
+          </div>
+
+          <div className="participa-contenido">
+            <div className="participa-info">
+              <span className="participa-sello">TU VOZ CUENTA ♡</span>
+
+              <h3>Te escuchamos.</h3>
+
+              <p>
+                No necesitás poner tu nombre. Elegí tu curso, contanos qué tipo
+                de mensaje querés dejar y escribí lo que necesites decir.
+              </p>
+
+              <div className="participa-opciones">
+                <span>💡 Idea</span>
+                <span>❓ Pregunta</span>
+                <span>💬 Sugerencia</span>
+                <span>📣 Propuesta</span>
+                <span>⚠️ Queja / inquietud</span>
+              </div>
+
+              <p className="participa-aclaracion">
+                El mensaje será recibido por el Centro de Estudiantes.
+              </p>
+            </div>
+
+            <form className="buzon-formulario" onSubmit={enviarParticipacion}>
+              <div className="campo-formulario">
+                <label htmlFor="curso">¿De qué curso sos?</label>
+
+                <select
+                  id="curso"
+                  name="curso"
+                  value={participacion.curso}
+                  onChange={(e) =>
+                    setParticipacion({
+                      ...participacion,
+                      curso: e.target.value,
+                    })
+                  }
+                >
+                  <option value="" disabled>
+                    Elegí tu curso
+                  </option>
+
+                  <option value="1° A">1° A</option>
+                  <option value="1° B">1° B</option>
+                  <option value="2° A">2° A</option>
+                  <option value="2° B">2° B</option>
+                  <option value="3° A">3° A</option>
+                  <option value="3° B">3° B</option>
+                  <option value="4° A">4° A</option>
+                  <option value="4° B">4° B</option>
+                  <option value="5° A">5° A</option>
+                  <option value="5° B">5° B</option>
+                  <option value="6° A">6° A</option>
+                  <option value="6° B">6° B</option>
+                </select>
+              </div>
+
+              <div className="campo-formulario">
+                <label htmlFor="tipoMensaje">¿Qué querés compartir?</label>
+
+                <select
+                  id="tipoMensaje"
+                  name="tipoMensaje"
+                  value={participacion.motivo}
+                  onChange={(e) =>
+                    setParticipacion({
+                      ...participacion,
+                      motivo: e.target.value,
+                    })
+                  }
+                >
+                  <option value="" disabled>
+                    Elegí una opción
+                  </option>
+
+                  <option value="Idea">Idea</option>
+                  <option value="Pregunta">Pregunta</option>
+                  <option value="Sugerencia">Sugerencia</option>
+                  <option value="Propuesta">Propuesta</option>
+                  <option value="Queja / inquietud">Queja / inquietud</option>
+                </select>
+              </div>
+
+              <div className="campo-formulario">
+                <label htmlFor="mensaje">Escribí tu mensaje</label>
+
+                <textarea
+                  id="mensaje"
+                  name="mensaje"
+                  rows="6"
+                  placeholder="Este espacio es para vos..."
+                  value={participacion.mensaje}
+                  onChange={(e) =>
+                    setParticipacion({
+                      ...participacion,
+                      mensaje: e.target.value,
+                    })
+                  }
+                ></textarea>
+              </div>
+
+              {errorParticipacion && (
+                <p className="participa-error">{errorParticipacion}</p>
+              )}
+
+              {mensajeParticipacion && (
+                <p className="participa-exito">{mensajeParticipacion}</p>
+              )}
+
+              <button type="submit" className="boton-enviar-mensaje">
+                Enviar al Centro
+                <span>→</span>
+              </button>
+
+              <p className="formulario-nota">
+                No te pedimos nombre ni datos personales.
+              </p>
+            </form>
+          </div>
+
+          <div className="participa-frase">
+            <span>ESCUCHAR</span>
+            <span>·</span>
+            <span>PROPONER</span>
+            <span>·</span>
+            <span>PARTICIPAR</span>
+            <span>·</span>
+            <strong>CONSTRUIR</strong>
+          </div>
+        </section>
+      )}
+
+      {seccionActiva === "manual" && (
+        <section className="manual" id="manual">
+          <div className="manual-encabezado">
+            <span className="mini-titulo">UNA GUÍA HECHA POR ESTUDIANTES</span>
+
+            <h2>Manual Digital</h2>
+
+            <p>
+              Un espacio pensado para reunir información útil, clara y accesible
+              para toda la comunidad estudiantil.
+            </p>
+          </div>
+
+          <div className="manual-destacado">
+            <div className="manual-destacado-texto">
+              <span className="manual-sello">EN CONSTRUCCIÓN</span>
+
+              <h4>
+                MANUAL DIGITAL PARA EL CUIDADO Y MANTENIMIENTO DE INSTRUMENTOS
+                MUSICALES
+              </h4>
+
+              <p>
+                Este proyecto es una guía para estudiantes y profesores
+                destinada a los instrumentos musicales y la organización del
+                pañol.
+              </p>
+
+              <div className="manual-autoria">
+                <span>Proyecto impulsado por</span>
+                <strong>Ashley Tortorello · Secretarío</strong>
+              </div>
+            </div>
+
+            <div className="manual-icono-grande">📖</div>
+          </div>
+
+          <div className="manual-capitulos">
+            <article className="manual-card activo">
+              <span className="manual-numero">01</span>
+              <h3>El Centro de Estudiantes</h3>
+              <p>Qué es, para qué sirve y cómo podés participar.</p>
+              <span className="manual-estado">Próximamente</span>
+            </article>
+
+            <article className="manual-card">
+              <span className="manual-numero">02</span>
+              <h3>Derechos del estudiante</h3>
+              <p>Información clara para conocer y ejercer tus derechos.</p>
+              <span className="manual-estado">Próximamente</span>
+            </article>
+
+            <article className="manual-card">
+              <span className="manual-numero">03</span>
+              <h3>Participación</h3>
+              <p>
+                Delegados, asambleas, propuestas y espacios para hacer escuchar
+                tu voz.
+              </p>
+              <span className="manual-estado">Próximamente</span>
+            </article>
+
+            <article className="manual-card">
+              <span className="manual-numero">04</span>
+              <h3>Convivencia</h3>
+              <p>
+                Acuerdos, respeto y herramientas para una mejor vida escolar.
+              </p>
+              <span className="manual-estado">Próximamente</span>
+            </article>
+
+            <article className="manual-card">
+              <span className="manual-numero">05</span>
+              <h3>¿A quién recurro?</h3>
+              <p>
+                Orientaciones para saber dónde acudir ante dudas o situaciones
+                escolares.
+              </p>
+              <span className="manual-estado">Próximamente</span>
+            </article>
+
+            <article className="manual-card">
+              <span className="manual-numero">06</span>
+              <h3>Información útil</h3>
+              <p>Recursos, contactos y herramientas que iremos sumando.</p>
+              <span className="manual-estado">Próximamente</span>
+            </article>
+          </div>
+        </section>
+      )}
+
+      {seccionActiva === "galeria" && (
+        <section className="galeria" id="galeria">
+          <div className="galeria-encabezado">
+            <span className="mini-titulo">
+              MOMENTOS QUE CONSTRUYEN HISTORIA
+            </span>
+
+            <h2>Galería</h2>
+
+            <p>
+              Fotos, videos y recuerdos de las actividades del Centro de
+              Estudiantes.
+            </p>
+          </div>
+
+          <div className="galeria-grid">
+            <article className="galeria-card">
+              <div className="galeria-imagen galeria-imagen-1">
+                <span>PRÓXIMAMENTE</span>
+              </div>
+
+              <div className="galeria-contenido">
+                <div className="galeria-meta">
+                  <span>SEPTIEMBRE 2026</span>
+                  <span>·</span>
+                  <span>CENTRO DE ESTUDIANTES</span>
+                </div>
+
+                <h3>Primeros pasos</h3>
+
+                <p>
+                  Los primeros encuentros, ideas y momentos de esta nueva etapa.
+                </p>
+
+                <button className="galeria-boton" type="button">
+                  Ver actividad →
+                </button>
+              </div>
+            </article>
+
+            <article className="galeria-card">
+              <div className="galeria-imagen galeria-imagen-2">
+                <span>FOTOS</span>
+              </div>
+
+              <div className="galeria-contenido">
+                <div className="galeria-meta">
+                  <span>PRÓXIMAMENTE</span>
+                  <span>·</span>
+                  <span>ACTIVIDADES</span>
+                </div>
+
+                <h3>Vida estudiantil</h3>
+
+                <p>
+                  Jornadas, encuentros, propuestas y actividades de nuestra
+                  comunidad.
+                </p>
+
+                <button className="galeria-boton" type="button">
+                  Ver fotos →
+                </button>
+              </div>
+            </article>
+
+            <article className="galeria-card">
+              <div className="galeria-imagen galeria-imagen-3">
+                <span>VIDEOS</span>
+              </div>
+
+              <div className="galeria-contenido">
+                <div className="galeria-meta">
+                  <span>PRÓXIMAMENTE</span>
+                  <span>·</span>
+                  <span>MÚSICA</span>
+                </div>
+
+                <h3>Nuestra escuela suena</h3>
+
+                <p>
+                  Presentaciones, música y momentos que reflejan la identidad de
+                  la E.E.S. N.º 50.
+                </p>
+
+                <button className="galeria-boton" type="button">
+                  Ver videos →
+                </button>
+              </div>
+            </article>
+          </div>
+
+          <div className="galeria-destacado">
+            <div>
+              <span className="documento-etiqueta">
+                UNA HISTORIA QUE RECIÉN EMPIEZA
+              </span>
+
+              <h3>Cada proyecto también deja recuerdos.</h3>
+
+              <p>
+                Esta galería va a crecer con cada actividad, encuentro y
+                propuesta del Centro.
+              </p>
+            </div>
+
+            <span className="galeria-icono">📷</span>
+          </div>
+        </section>
+      )}
+
+      {seccionActiva === "gestion" && (
+        <section className="gestion" id="gestion">
+          <div className="gestion-encabezado">
+            <span className="gestion-etiqueta">
+              🔒 ESPACIO DE ADMINISTRACIÓN
+            </span>
+            {gestionAutorizada && (
+              <button
+                type="button"
+                className="gestion-cerrar-superior"
+                onClick={cerrarSesionGestion}
+              >
+                🔓 Cerrar sesión
+              </button>
+            )}
+
+            <h2>Gestión</h2>
+
+            <p>
+              Desde acá el Centro de Estudiantes podrá administrar el contenido
+              de la página y llevar adelante su organización interna.
+            </p>
+          </div>
+
+          {!gestionAutorizada ? (
+            <div className="gestion-login">
+              <div className="gestion-login-icono">🔐</div>
+
+              <span className="gestion-login-etiqueta">ACCESO PRIVADO</span>
+
+              <h3>Ingresar a Gestión</h3>
+
+              <p>
+                Este espacio es exclusivo para integrantes autorizados del
+                Centro de Estudiantes.
+              </p>
+
+              <form
+                className="gestion-login-form"
+                onSubmit={iniciarSesionGestion}
+              >
+                <div className="gestion-login-campo">
+                  <label htmlFor="usuarioGestion">Usuario</label>
+
+                  <input
+                    id="usuarioGestion"
+                    type="text"
+                    value={loginGestion.usuario}
+                    onChange={(e) =>
+                      setLoginGestion({
+                        ...loginGestion,
+                        usuario: e.target.value,
+                      })
+                    }
+                    autoComplete="username"
+                    placeholder="Usuario de Gestión"
+                  />
+                </div>
+
+                <div className="gestion-login-campo">
+                  <label htmlFor="passwordGestion">Contraseña</label>
+
+                  <div className="password-contenedor">
+                    <input
+                      id="passwordGestion"
+                      type={mostrarPassword ? "text" : "password"}
+                      value={loginGestion.password}
+                      onChange={(e) =>
+                        setLoginGestion({
+                          ...loginGestion,
+                          password: e.target.value,
+                        })
+                      }
+                      autoComplete="current-password"
+                      placeholder="Contraseña"
+                    />
+
+                    <button
+                      type="button"
+                      className="password-ojo"
+                      onClick={() => setMostrarPassword(!mostrarPassword)}
+                      aria-label={
+                        mostrarPassword
+                          ? "Ocultar contraseña"
+                          : "Mostrar contraseña"
+                      }
+                      title={
+                        mostrarPassword
+                          ? "Ocultar contraseña"
+                          : "Mostrar contraseña"
+                      }
+                    >
+                      {mostrarPassword ? "👀" : "🙈"}
+                    </button>
+                  </div>
+                </div>
+
+                {errorLogin && (
+                  <p className="gestion-login-error">{errorLogin}</p>
+                )}
+
+                <button type="submit" className="gestion-login-boton">
+                  Entrar a Gestión
+                  <span>→</span>
+                </button>
+              </form>
+            </div>
+          ) : (
+            <>
+              <div className="gestion-aviso">
+                <div className="gestion-aviso-icono">🐢</div>
+
+                <div>
+                  <span>ÁREA PRIVADA</span>
+
+                  <h3>Panel del Centro de Estudiantes</h3>
+
+                  <p>
+                    Este espacio será de acceso exclusivo para las personas
+                    autorizadas del Centro.
+                  </p>
+                </div>
+              </div>
+
+              {moduloGestionActivo === null && (
+                <div className="gestion-grid">
+                  <article className="gestion-card">
+                    <span className="gestion-icono">📣</span>
+
+                    <div>
+                      <span className="gestion-numero">01</span>
+
+                      <h3>Comunicados</h3>
+
+                      <p>
+                        Crear, editar, destacar o retirar novedades de la
+                        página.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setModuloGestionActivo("comunicados")}
+                    >
+                      Administrar →
+                    </button>
+                  </article>
+
+                  <article className="gestion-card">
+                    <span className="gestion-icono">💡</span>
+
+                    <div>
+                      <span className="gestion-numero">02</span>
+
+                      <h3>Proyectos</h3>
+
+                      <p>
+                        Registrar proyectos y actualizar su estado y avances.
+                      </p>
+                    </div>
+
+                    <button type="button">Administrar →</button>
+                  </article>
+
+                  <article className="gestion-card">
+                    <div className="gestion-icono-con-aviso">
+                      <span className="gestion-icono">💬</span>
+
+                      {cantidadMensajesNuevos > 0 && (
+                        <span className="gestion-notificacion">
+                          {cantidadMensajesNuevos}
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="gestion-numero">03</span>
+
+                      <h3>Buzón estudiantil</h3>
+
+                      <p>Leer mensajes y organizar su seguimiento.</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setModuloGestionActivo("buzon")}
+                    >
+                      Ver mensajes →
+                    </button>
+                  </article>
+
+                  <article className="gestion-card">
+                    <span className="gestion-icono">📷</span>
+
+                    <div>
+                      <span className="gestion-numero">04</span>
+
+                      <h3>Galería</h3>
+
+                      <p>Cargar fotografías, videos y nuevas actividades.</p>
+                    </div>
+
+                    <button type="button">Administrar →</button>
+                  </article>
+
+                  <article className="gestion-card">
+                    <span className="gestion-icono">📖</span>
+
+                    <div>
+                      <span className="gestion-numero">05</span>
+
+                      <h3>Manual Digital</h3>
+
+                      <p>Incorporar y actualizar los capítulos del Manual.</p>
+                    </div>
+
+                    <button type="button">Administrar →</button>
+                  </article>
+
+                  <article className="gestion-card gestion-card-tesoreria">
+                    <span className="gestion-icono">💰</span>
+
+                    <div>
+                      <span className="gestion-numero">06</span>
+
+                      <h3>Tesorería</h3>
+
+                      <p>
+                        Registrar ingresos y egresos, emitir recibos y consultar
+                        el balance del Centro.
+                      </p>
+
+                      <div className="gestion-mini-datos">
+                        <span>INGRESOS</span>
+                        <span>EGRESOS</span>
+                        <span>BALANCE</span>
+                        <span>RECIBOS</span>
+                      </div>
+                    </div>
+
+                    <a
+                      href="#tesoreria"
+                      className="boton-ir-tesoreria"
+                      onClick={() => {
+                        setSeccionActiva("tesoreria");
+                        setMenuMovilAbierto(false);
+                      }}
+                    >
+                      Ir a Tesorería →
+                    </a>
+                  </article>
+                </div>
+              )}
+
+              {moduloGestionActivo === "comunicados" && (
+                <section className="gestion-comunicados">
+                  <div className="gestion-comunicados-header">
+                    <div>
+                      <span className="gestion-etiqueta">
+                        📣 ADMINISTRAR COMUNICADOS
+                      </span>
+
+                      <h3>Comunicados & Novedades</h3>
+
+                      <p>
+                        Desde acá podrán crear, editar, destacar, publicar o
+                        retirar novedades de la página.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="boton-volver-gestion"
+                      onClick={() => setModuloGestionActivo(null)}
+                    >
+                      ← Volver al panel
+                    </button>
+                  </div>
+                  <form className="gestion-comunicados-formulario">
+                    <div className="campo-tesoreria">
+                      <label htmlFor="fechaComunicado">Fecha</label>
+
+                      <input
+                        id="fechaComunicado"
+                        type="date"
+                        max={hoy}
+                        value={nuevoComunicado.fecha}
+                        onChange={(e) =>
+                          setNuevoComunicado({
+                            ...nuevoComunicado,
+                            fecha: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="campo-tesoreria">
+                      <label htmlFor="categoriaComunicado">Categoría</label>
+
+                      <input
+                        id="categoriaComunicado"
+                        type="text"
+                        placeholder="Ej: Centro de Estudiantes"
+                        value={nuevoComunicado.categoria}
+                        onChange={(e) =>
+                          setNuevoComunicado({
+                            ...nuevoComunicado,
+                            categoria: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="campo-tesoreria">
+                      <label htmlFor="tituloComunicado">Título</label>
+
+                      <input
+                        id="tituloComunicado"
+                        type="text"
+                        placeholder="Ej: ¡Tenemos nueva página!"
+                        value={nuevoComunicado.titulo}
+                        onChange={(e) =>
+                          setNuevoComunicado({
+                            ...nuevoComunicado,
+                            titulo: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="campo-tesoreria">
+                      <label htmlFor="textoComunicado">Texto</label>
+
+                      <textarea
+                        id="textoComunicado"
+                        rows="5"
+                        placeholder="Escribí el comunicado..."
+                        value={nuevoComunicado.texto}
+                        onChange={(e) =>
+                          setNuevoComunicado({
+                            ...nuevoComunicado,
+                            texto: e.target.value,
+                          })
+                        }
+                      ></textarea>
+                    </div>
+
+                    <div className="gestion-comunicados-opciones">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={nuevoComunicado.destacado}
+                          onChange={(e) =>
+                            setNuevoComunicado({
+                              ...nuevoComunicado,
+                              destacado: e.target.checked,
+                            })
+                          }
+                        />
+                        Destacar comunicado
+                      </label>
+
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={nuevoComunicado.publicado}
+                          onChange={(e) =>
+                            setNuevoComunicado({
+                              ...nuevoComunicado,
+                              publicado: e.target.checked,
+                            })
+                          }
+                        />
+                        Publicar en la página
+                      </label>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="boton-guardar-movimiento"
+                      onClick={guardarComunicado}
+                    >
+                      Guardar comunicado
+                      <span>→</span>
+                    </button>
+                  </form>
+                </section>
+              )}
+
+              {moduloGestionActivo === "buzon" && (
+                <section className="buzon-gestion" id="buzon-gestion">
+                  <div className="buzon-gestion-header">
+                    <div>
+                      <span className="buzon-gestion-etiqueta">
+                        💬 PARTICIPÁ
+                      </span>
+
+                      <h3>Buzón estudiantil</h3>
+
+                      <p>
+                        Mensajes enviados por estudiantes para que el Centro
+                        pueda leerlos y organizar su seguimiento.
+                      </p>
+                    </div>
+
+                    <span className="buzon-total">
+                      {participacionesGestion.length} mensajes
+                    </span>
+                    <button
+                      type="button"
+                      className="boton-volver-gestion"
+                      onClick={() => setModuloGestionActivo(null)}
+                    >
+                      ← Volver al panel
+                    </button>
+                  </div>
+
+                  {participacionesGestion.length === 0 ? (
+                    <div className="buzon-vacio">
+                      <span>🐢</span>
+                      <h4>No hay mensajes todavía</h4>
+                      <p>
+                        Cuando un estudiante participe, su mensaje aparecerá
+                        acá.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="buzon-tarjetas">
+                      {participacionesGestion.map((participacion) => (
+                        <article
+                          className="buzon-mensaje-card"
+                          key={participacion._id}
+                        >
+                          <div className="buzon-mensaje-superior">
+                            <div className="buzon-tags">
+                              <span className="buzon-curso">
+                                🎓 {participacion.curso}
+                              </span>
+
+                              <span className="buzon-motivo">
+                                {participacion.motivo}
+                              </span>
+                            </div>
+
+                            <span
+                              className={`buzon-estado estado-${participacion.estado
+                                .toLowerCase()
+                                .replaceAll(" ", "-")
+                                .replace("í", "i")}`}
+                            >
+                              {participacion.estado === "Nuevo"
+                                ? "No leído"
+                                : participacion.estado}
+                            </span>
+                          </div>
+
+                          <div className="buzon-texto">
+                            <p>{participacion.mensaje}</p>
+                          </div>
+
+                          <div className="buzon-estado-acciones">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                cambiarEstadoParticipacion(
+                                  participacion._id,
+                                  "Nuevo",
+                                )
+                              }
+                            >
+                              ↩ No leído
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                cambiarEstadoParticipacion(
+                                  participacion._id,
+                                  "Leído",
+                                )
+                              }
+                            >
+                              👁 Leído
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                cambiarEstadoParticipacion(
+                                  participacion._id,
+                                  "En tratamiento",
+                                )
+                              }
+                            >
+                              ⚙ En tratamiento
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                cambiarEstadoParticipacion(
+                                  participacion._id,
+                                  "Resuelto",
+                                )
+                              }
+                            >
+                              ✅ Resuelto
+                            </button>
+                          </div>
+                          <div className="buzon-eliminar-contenedor">
+                            <button
+                              type="button"
+                              className="buzon-eliminar"
+                              onClick={() =>
+                                eliminarParticipacion(participacion._id)
+                              }
+                            >
+                              🗑️ Eliminar mensaje
+                            </button>
+                          </div>
+
+                          <div className="buzon-mensaje-pie">
+                            <div className="buzon-tortuguita">
+                              🐢
+                              <span>¡Gracias por participar!</span>
+                            </div>
+
+                            <small>
+                              {new Date(participacion.createdAt).toLocaleString(
+                                "es-AR",
+                              )}
+                            </small>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              <div className="gestion-pie">
+                <div>
+                  <span>PRÓXIMA ETAPA</span>
+
+                  <h3>De una página linda a un sistema de gestión real.</h3>
+
+                  <p>
+                    Los datos quedarán guardados y podrán administrarse sin
+                    modificar el código de la página.
+                  </p>
+                </div>
+
+                <span className="gestion-pie-icono">♫</span>
+              </div>
+
+              <div className="gestion-sesion">
+                <span>🔓 Sesión de Gestión iniciada</span>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {seccionActiva === "tesoreria" && gestionAutorizada && (
         <section className="tesoreria" id="tesoreria">
           <div className="tesoreria-encabezado">
             <span className="tesoreria-etiqueta">
