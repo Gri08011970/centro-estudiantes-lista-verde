@@ -4919,3 +4919,290 @@ a {
   background: #f4ead8;
   transform: translateX(-3px);
 }
+/* =========================================================
+   TARJETAS FLIP - COLABORACIÓN
+   ========================================================= */
+
+.transparencia-colabora-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+  max-width: 720px;
+  margin: 28px auto;
+}
+
+.tarjeta-colaboracion {
+  min-height: 220px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.tarjeta-colaboracion-inner {
+  position: relative;
+  width: 100%;
+  height: 220px;
+
+  transition: transform 0.6s ease;
+  transform-style: preserve-3d;
+}
+
+.tarjeta-colaboracion.activa .tarjeta-colaboracion-inner {
+  transform: rotateY(180deg);
+}
+
+.tarjeta-colaboracion-frente,
+.tarjeta-colaboracion-dorso {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 28px;
+
+  border: 1px solid #dfd2bd;
+  border-radius: 24px;
+
+  background: #fffdf8;
+
+  box-shadow: 0 10px 24px rgba(65, 52, 36, 0.08);
+
+  backface-visibility: hidden;
+}
+
+.tarjeta-colaboracion-frente span {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+}
+
+.tarjeta-colaboracion-frente h4 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  color: #174c2a;
+}
+
+.tarjeta-colaboracion-frente p {
+  margin: 0;
+  color: #8a774f;
+  font-weight: 800;
+}
+
+.tarjeta-colaboracion-dorso {
+  transform: rotateY(180deg);
+  background: #f7efdf;
+}
+
+.tarjeta-colaboracion-dorso > span {
+  margin-bottom: 10px;
+
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+
+  color: #8a774f;
+}
+
+.tarjeta-colaboracion-dorso strong {
+  max-width: 100%;
+  margin-bottom: 18px;
+
+  font-size: 1.15rem;
+  color: #174c2a;
+
+  overflow-wrap: anywhere;
+}
+
+.tarjeta-colaboracion-dorso button {
+  padding: 10px 16px;
+
+  border: 1px solid #d7c29e;
+  border-radius: 16px;
+
+  background: #fffaf0;
+  color: #654b32;
+
+  font: inherit;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+@media (max-width: 650px) {
+  .transparencia-colabora-tarjetas {
+    grid-template-columns: 1fr;
+  }
+}
+/* =========================================================
+   GESTIÓN - TRANSPARENCIA / RENDICIONES
+   ========================================================= */
+
+.gestion-transparencia-rendiciones {
+  max-width: 1000px;
+  margin: 35px auto 0;
+  padding: 35px;
+
+  background: #fffaf0;
+  color: #174c2a;
+
+  border: 1px solid #e3d6c1;
+  border-radius: 28px;
+
+  box-shadow: 0 12px 28px rgba(54, 45, 32, 0.1);
+}
+
+.gestion-transparencia-titulo {
+  max-width: 760px;
+  margin: 0 auto 30px;
+  text-align: center;
+}
+
+.gestion-transparencia-titulo > span {
+  display: inline-block;
+  margin-bottom: 10px;
+
+  color: #8a774f;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.gestion-transparencia-titulo h3 {
+  margin: 0 0 12px;
+
+  color: #174c2a;
+  font-size: 1.8rem;
+}
+
+.gestion-transparencia-titulo p {
+  margin: 0;
+  line-height: 1.6;
+  color: #62675d;
+}
+
+.gestion-transparencia-formulario {
+  display: grid;
+  gap: 20px;
+}
+
+.gestion-transparencia-formulario .campo-tesoreria {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gestion-transparencia-formulario .campo-tesoreria label {
+  color: #5f594d;
+  font-weight: 900;
+}
+
+.gestion-transparencia-formulario .campo-tesoreria input,
+.gestion-transparencia-formulario .campo-tesoreria textarea {
+  width: 100%;
+  padding: 14px 16px;
+
+  background: #fff;
+  color: #26382b;
+
+  border: 1px solid #ddd1bd;
+  border-radius: 16px;
+
+  font: inherit;
+
+  outline: none;
+}
+
+.gestion-transparencia-formulario .campo-tesoreria input:focus,
+.gestion-transparencia-formulario .campo-tesoreria textarea:focus {
+  border-color: #b99c70;
+  box-shadow: 0 0 0 3px rgba(185, 156, 112, 0.15);
+}
+
+.gestion-transparencia-formulario .campo-tesoreria textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.gestion-transparencia-publicar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  padding: 15px 18px;
+
+  background: #f4ead8;
+  color: #654b32;
+
+  border: 1px solid #dfcfb5;
+  border-radius: 18px;
+
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.gestion-transparencia-publicar input {
+  width: 19px;
+  height: 19px;
+  cursor: pointer;
+}
+
+.gestion-transparencia-formulario .boton-guardar-movimiento {
+  width: 100%;
+  padding: 14px 20px;
+
+  background: #236238;
+  color: white;
+
+  border: none;
+  border-radius: 18px;
+
+  font: inherit;
+  font-weight: 900;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.gestion-transparencia-formulario .boton-guardar-movimiento:hover {
+  background: #1d5230;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 650px) {
+  .gestion-transparencia-rendiciones {
+    padding: 24px 18px;
+  }
+}
+.gestion-transparencia-colaboracion {
+  max-width: 1000px;
+  margin: 35px auto 0;
+  padding: 35px;
+
+  background: #fffaf0;
+  color: #174c2a;
+
+  border: 1px solid #e3d6c1;
+  border-radius: 28px;
+
+  box-shadow: 0 12px 28px rgba(54, 45, 32, 0.1);
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-titulo h3 {
+  color: #174c2a;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-titulo p {
+  color: #62675d;
+}
+
+.gestion-transparencia-colaboracion
+  .campo-tesoreria label {
+  color: #5f594d;
+}

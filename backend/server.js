@@ -14,7 +14,7 @@ const authRoutes = require("./routes/auth");
 const participacionesRoutes =
   require("./routes/participaciones");
 const comunicadosRoutes = require("./routes/comunicados");  
-
+const transparenciaRoutes = require("./routes/transparencia");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -27,6 +27,8 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/participaciones", participacionesRoutes);
 app.use("/api/comunicados", comunicadosRoutes);
+
+app.use("/api/transparencia", transparenciaRoutes);
 
 // ========================================
 // FRONTEND REACT
