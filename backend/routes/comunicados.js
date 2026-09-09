@@ -65,9 +65,19 @@ router.post("/", verificarToken, async (req, res) => {
 
     if (!fecha || !categoria || !titulo || !texto) {
       return res.status(400).json({
-        mensaje:
-          "Completá fecha, categoría, título y texto.",
+        mensaje: "Completá fecha, categoría, título y texto.",
       });
+    }
+
+    if (destacado) {
+      await Comunicado.updateMany(
+        {},
+        {
+          $set: {
+            destacado: false,
+          },
+        },
+      );
     }
 
     const nuevoComunicado = await Comunicado.create({
@@ -105,9 +115,23 @@ router.put("/:id", verificarToken, async (req, res) => {
 
     if (!fecha || !categoria || !titulo || !texto) {
       return res.status(400).json({
-        mensaje:
-          "Completá fecha, categoría, título y texto.",
+        mensaje: "Completá fecha, categoría, título y texto.",
       });
+    }
+
+    if (destacado) {
+      await Comunicado.updateMany(
+        {
+          _id: {
+            $ne: req.params.id,
+          },
+        },
+        {
+          $set: {
+            destacado: false,
+          },
+        },
+      );
     }
 
     const comunicadoActualizado =

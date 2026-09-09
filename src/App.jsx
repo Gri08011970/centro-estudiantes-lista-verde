@@ -14,6 +14,7 @@ const seccionesValidas = [
   "galeria",
   "gestion",
   "tesoreria",
+  "transparencia",
 ];
 
 function App() {
@@ -52,6 +53,8 @@ function App() {
     destacado: false,
     publicado: false,
   });
+
+  const [comunicadosGestion, setComunicadosGestion] = useState([]);
 
   const [moduloGestionActivo, setModuloGestionActivo] = useState(null);
   const obtenerSeccionInicial = () => {
@@ -397,8 +400,8 @@ function App() {
     const cargarComunicados = async () => {
       try {
         const respuesta = await fetch(
-  "https://centro-estudiantes-lista-verde.onrender.com/api/comunicados",
-);
+          "https://centro-estudiantes-lista-verde.onrender.com/api/comunicados",
+        );
 
         if (!respuesta.ok) {
           throw new Error("No se pudieron cargar los comunicados.");
@@ -413,6 +416,7 @@ function App() {
 
     cargarComunicados();
   }, []);
+  const [comunicadoEditando, setComunicadoEditando] = useState(null);
 
   useEffect(() => {
     const manejarCambioHash = () => {
@@ -689,7 +693,6 @@ function App() {
     }
   };
 
-
   const cambiarEstadoParticipacion = async (id, nuevoEstado) => {
     try {
       const respuesta = await fetch(
@@ -771,25 +774,104 @@ function App() {
     try {
       const token = sessionStorage.getItem("gestionToken");
 
-      const respuesta = await fetch(
-        "https://centro-estudiantes-lista-verde.onrender.com/api/comunicados",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(nuevoComunicado),
+      const url = comunicadoEditando
+        ? `https://centro-estudiantes-lista-verde.onrender.com/api/comunicados/${comunicadoEditando}`
+        : "https://centro-estudiantes-lista-verde.onrender.com/api/comunicados";
+
+      const respuesta = await fetch(url, {
+        method: comunicadoEditando ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(nuevoComunicado),
+      });
 
       const datos = await respuesta.json();
 
       if (!respuesta.ok) {
-        throw new Error(datos.mensaje || "No se pudo guardar el comunicado.");
+        throw new Error(
+          datos.mensaje ||
+            (comunicadoEditando
+              ? "No se pudo actualizar el comunicado."
+              : "No se pudo guardar el comunicado."),
+        );
       }
 
-      alert("Comunicado guardado correctamente.");
+      if (comunicadoEditando) {
+        setComunicadosGestion((anteriores) =>
+          anteriores.map((comunicado) => {
+            if (comunicado._id === datos._id) {
+              return datos;
+            }
+
+            if (datos.destacado) {
+              return {
+                ...comunicado,
+                destacado: false,
+              };
+            }
+
+            return comunicado;
+          }),
+        );
+
+        setComunicados((anteriores) => {
+          let actualizados = datos.destacado
+            ? anteriores.map((comunicado) => ({
+                ...comunicado,
+                destacado: false,
+              }))
+            : anteriores;
+
+          if (!datos.publicado) {
+            return actualizados.filter(
+              (comunicado) => comunicado._id !== datos._id,
+            );
+          }
+
+          const yaExiste = actualizados.some(
+            (comunicado) => comunicado._id === datos._id,
+          );
+
+          if (yaExiste) {
+            return actualizados.map((comunicado) =>
+              comunicado._id === datos._id ? datos : comunicado,
+            );
+          }
+
+          return [datos, ...actualizados];
+        });
+        alert("Comunicado actualizado correctamente.");
+      } else {
+        setComunicadosGestion((anteriores) => {
+          const anterioresActualizados = datos.destacado
+            ? anteriores.map((comunicado) => ({
+                ...comunicado,
+                destacado: false,
+              }))
+            : anteriores;
+
+          return [datos, ...anterioresActualizados];
+        });
+
+        setComunicados((anteriores) => {
+          const anterioresActualizados = datos.destacado
+            ? anteriores.map((comunicado) => ({
+                ...comunicado,
+                destacado: false,
+              }))
+            : anteriores;
+
+          if (datos.publicado) {
+            return [datos, ...anterioresActualizados];
+          }
+
+          return anterioresActualizados;
+        });
+
+        alert("Comunicado guardado correctamente.");
+      }
 
       setNuevoComunicado({
         fecha: hoy,
@@ -800,11 +882,235 @@ function App() {
         publicado: false,
       });
 
-      if (datos.publicado) {
-        setComunicados((anteriores) => [datos, ...anteriores]);
-      }
+      setComunicadoEditando(null);
     } catch (error) {
       console.error("Error al guardar comunicado:", error);
+      alert(error.message);
+    }
+  };
+  const cargarComunicadosGestion = async () => {
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const respuesta = await fetch(
+        "https://centro-estudiantes-lista-verde.onrender.com/api/comunicados/gestion",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje || "No se pudieron cargar los comunicados.",
+        );
+      }
+
+      setComunicadosGestion(datos);
+    } catch (error) {
+      console.error("Error al cargar comunicados de Gestión:", error);
+    }
+  };
+
+  const eliminarComunicado = async (id) => {
+    const confirmar = window.confirm("¿Querés eliminar este comunicado?");
+
+    if (!confirmar) {
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const respuesta = await fetch(
+        `https://centro-estudiantes-lista-verde.onrender.com/api/comunicados/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(datos.mensaje || "No se pudo eliminar el comunicado.");
+      }
+
+      setComunicadosGestion((anteriores) =>
+        anteriores.filter((comunicado) => comunicado._id !== id),
+      );
+
+      setComunicados((anteriores) =>
+        anteriores.filter((comunicado) => comunicado._id !== id),
+      );
+
+      alert("Comunicado eliminado correctamente.");
+    } catch (error) {
+      console.error("Error al eliminar comunicado:", error);
+      alert(error.message);
+    }
+  };
+
+  const editarComunicado = (comunicado) => {
+    setComunicadoEditando(comunicado._id);
+
+    setNuevoComunicado({
+      fecha: comunicado.fecha,
+      categoria: comunicado.categoria,
+      titulo: comunicado.titulo,
+      texto: comunicado.texto,
+      destacado: comunicado.destacado,
+      publicado: comunicado.publicado,
+    });
+
+    setTimeout(() => {
+      document.getElementById("formulario-comunicado")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
+
+  const cancelarEdicionComunicado = () => {
+    setComunicadoEditando(null);
+
+    setNuevoComunicado({
+      fecha: hoy,
+      categoria: "",
+      titulo: "",
+      texto: "",
+      destacado: false,
+      publicado: false,
+    });
+  };
+
+  const cambiarPublicacionComunicado = async (comunicado) => {
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const comunicadoActualizado = {
+        fecha: comunicado.fecha,
+        categoria: comunicado.categoria,
+        titulo: comunicado.titulo,
+        texto: comunicado.texto,
+        destacado: comunicado.destacado,
+        publicado: !comunicado.publicado,
+      };
+
+      const respuesta = await fetch(
+        `https://centro-estudiantes-lista-verde.onrender.com/api/comunicados/${comunicado._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(comunicadoActualizado),
+        },
+      );
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(datos.mensaje || "No se pudo cambiar la publicación.");
+      }
+
+      setComunicadosGestion((anteriores) =>
+        anteriores.map((item) => (item._id === datos._id ? datos : item)),
+      );
+
+      setComunicados((anteriores) => {
+        if (!datos.publicado) {
+          return anteriores.filter((item) => item._id !== datos._id);
+        }
+
+        const yaExiste = anteriores.some((item) => item._id === datos._id);
+
+        if (yaExiste) {
+          return anteriores.map((item) =>
+            item._id === datos._id ? datos : item,
+          );
+        }
+
+        return [datos, ...anteriores];
+      });
+    } catch (error) {
+      console.error("Error al cambiar publicación:", error);
+      alert(error.message);
+    }
+  };
+
+  const cambiarDestacadoComunicado = async (comunicado) => {
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const comunicadoActualizado = {
+        fecha: comunicado.fecha,
+        categoria: comunicado.categoria,
+        titulo: comunicado.titulo,
+        texto: comunicado.texto,
+        destacado: !comunicado.destacado,
+        publicado: comunicado.publicado,
+      };
+
+      const respuesta = await fetch(
+        `https://centro-estudiantes-lista-verde.onrender.com/api/comunicados/${comunicado._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(comunicadoActualizado),
+        },
+      );
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(datos.mensaje || "No se pudo cambiar el destacado.");
+      }
+
+      setComunicadosGestion((anteriores) =>
+        anteriores.map((item) => {
+          if (item._id === datos._id) {
+            return datos;
+          }
+
+          if (datos.destacado) {
+            return {
+              ...item,
+              destacado: false,
+            };
+          }
+
+          return item;
+        }),
+      );
+
+      setComunicados((anteriores) =>
+        anteriores.map((item) => {
+          if (item._id === datos._id) {
+            return datos;
+          }
+
+          if (datos.destacado) {
+            return {
+              ...item,
+              destacado: false,
+            };
+          }
+
+          return item;
+        }),
+      );
+    } catch (error) {
+      console.error("Error al cambiar destacado:", error);
       alert(error.message);
     }
   };
@@ -879,6 +1185,16 @@ function App() {
               }}
             >
               Proyectos
+            </a>
+
+            <a
+              href="#transparencia"
+              onClick={() => {
+                setSeccionActiva("transparencia");
+                setMenuMovilAbierto(false);
+              }}
+            >
+              Transparencia
             </a>
 
             <a
@@ -1445,6 +1761,67 @@ function App() {
           </div>
         </section>
       )}
+      {seccionActiva === "transparencia" && (
+        <section id="transparencia" className="transparencia seccion">
+          <div className="transparencia-encabezado">
+            <span className="transparencia-etiqueta">CUENTAS CLARAS</span>
+
+            <h2>Transparencia</h2>
+
+            <p>
+              Queremos que todos los estudiantes sepan cómo se utilizan los
+              recursos del Centro de Estudiantes.
+            </p>
+          </div>
+           <div className="transparencia-volver">
+            <a href="#inicio" onClick={() => setSeccionActiva("inicio")}>
+              ← Volver al inicio
+            </a>
+          </div>
+
+          <div className="transparencia-vacio">
+            <span className="transparencia-vacio-icono">📋</span>
+
+            <h3>Próximamente vas a encontrar acá nuestras rendiciones</h3>
+
+            <p>
+              Publicaremos de manera clara las actividades realizadas, los
+              fondos recaudados y el destino de los recursos.
+            </p>
+
+            <small>
+              Los comprobantes y el detalle completo estarán disponibles para
+              consulta en el Centro de Estudiantes.
+            </small>
+          </div>
+          <div className="transparencia-colabora">
+            <div className="transparencia-colabora-icono">🤝</div>
+
+            <span className="transparencia-colabora-etiqueta">
+              COLABORÁ CON EL CENTRO
+            </span>
+
+            <h3>La escuela es de todos. También se construye entre todos.</h3>
+
+            <p>
+              Si querés colaborar con las actividades y proyectos del Centro de
+              Estudiantes, podés hacerlo de manera voluntaria. Cada aporte, por
+              pequeño que sea, nos ayuda a transformar ideas en acciones para
+              nuestra escuela.
+            </p>
+
+            <div className="transparencia-colabora-datos">
+              <p>Los datos para colaborar estarán disponibles próximamente.</p>
+            </div>
+
+            <small>
+              Cada aporte y su destino serán informados en esta sección de
+              Transparencia.
+            </small>
+          </div>
+         
+        </section>
+      )}
 
       {seccionActiva === "participa" && (
         <section className="participa" id="participa">
@@ -1936,7 +2313,10 @@ function App() {
 
                     <button
                       type="button"
-                      onClick={() => setModuloGestionActivo("comunicados")}
+                      onClick={() => {
+                        setModuloGestionActivo("comunicados");
+                        cargarComunicadosGestion();
+                      }}
                     >
                       Administrar →
                     </button>
@@ -2072,7 +2452,10 @@ function App() {
                       ← Volver al panel
                     </button>
                   </div>
-                  <form className="gestion-comunicados-formulario">
+                  <form
+                    id="formulario-comunicado"
+                    className="gestion-comunicados-formulario"
+                  >
                     <div className="campo-tesoreria">
                       <label htmlFor="fechaComunicado">Fecha</label>
 
@@ -2171,15 +2554,117 @@ function App() {
                       </label>
                     </div>
 
-                    <button
-                      type="button"
-                      className="boton-guardar-movimiento"
-                      onClick={guardarComunicado}
-                    >
-                      Guardar comunicado
-                      <span>→</span>
-                    </button>
+                    <div className="acciones-formulario-comunicado">
+                      <button
+                        type="button"
+                        className="boton-guardar-movimiento"
+                        onClick={guardarComunicado}
+                      >
+                        {comunicadoEditando
+                          ? "Guardar cambios"
+                          : "Guardar comunicado"}
+                        <span>→</span>
+                      </button>
+
+                      {comunicadoEditando && (
+                        <button
+                          type="button"
+                          className="boton-cancelar-edicion"
+                          onClick={cancelarEdicionComunicado}
+                        >
+                          ✖ Cancelar edición
+                        </button>
+                      )}
+                    </div>
                   </form>
+                  <div className="comunicados-gestion-listado">
+                    <div className="comunicados-gestion-listado-header">
+                      <span>📋 COMUNICADOS CARGADOS</span>
+                      <strong>{comunicadosGestion.length}</strong>
+                    </div>
+
+                    {comunicadosGestion.length === 0 ? (
+                      <div className="comunicados-gestion-vacio">
+                        <p>Todavía no hay comunicados cargados.</p>
+                      </div>
+                    ) : (
+                      <div className="comunicados-gestion-tarjetas">
+                        {comunicadosGestion.map((comunicado) => (
+                          <article
+                            className="comunicado-gestion-card"
+                            key={comunicado._id}
+                          >
+                            <div className="comunicado-gestion-meta">
+                              <span>
+                                {new Date(
+                                  `${comunicado.fecha}T00:00:00`,
+                                ).toLocaleDateString("es-AR")}
+                              </span>
+
+                              <span>·</span>
+
+                              <span>{comunicado.categoria}</span>
+                            </div>
+
+                            <h4>{comunicado.titulo}</h4>
+
+                            <p>{comunicado.texto}</p>
+
+                            <div className="comunicado-gestion-estados">
+                              <span>
+                                {comunicado.publicado
+                                  ? "🟢 PUBLICADO"
+                                  : "⚪ BORRADOR"}
+                              </span>
+
+                              {comunicado.destacado && (
+                                <span>⭐ DESTACADO</span>
+                              )}
+                            </div>
+                            <div className="comunicado-gestion-acciones">
+                              <button
+                                type="button"
+                                onClick={() => editarComunicado(comunicado)}
+                              >
+                                ✏️ Editar
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  cambiarPublicacionComunicado(comunicado)
+                                }
+                              >
+                                {comunicado.publicado
+                                  ? "📤 Retirar de la página"
+                                  : "🌐 Publicar en la página"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  cambiarDestacadoComunicado(comunicado)
+                                }
+                              >
+                                {comunicado.destacado
+                                  ? "☆ Quitar destacado"
+                                  : "⭐ Destacar"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  eliminarComunicado(comunicado._id)
+                                }
+                              >
+                                🗑 Eliminar
+                              </button>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </section>
               )}
 
@@ -2370,6 +2855,18 @@ function App() {
               Registro de ingresos y egresos del Centro de Estudiantes, con
               control de recibos y balance automático.
             </p>
+
+            <button
+              type="button"
+              className="boton-volver-gestion"
+              onClick={() => {
+                setSeccionActiva("gestion");
+                setModuloGestionActivo(null);
+                window.location.hash = "gestion";
+              }}
+            >
+              ← Volver al panel
+            </button>
           </div>
 
           <div className="tesoreria-resumen">
