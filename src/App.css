@@ -93,6 +93,29 @@ a {
   color: #6b9f3f;
 }
 
+.menu a {
+  padding: 8px 10px;
+  border-radius: 16px;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.menu a:hover {
+  color: #5f8f46;
+  background: #eef5dd;
+}
+
+.menu a.menu-activo {
+  background: #e3f0cd;
+  color: #245b35;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(91, 132, 67, 0.16),
+    0 3px 8px rgba(42, 92, 48, 0.06);
+}
 .boton-gestion {
   border: none;
   background: #236238;
@@ -673,62 +696,215 @@ a {
     grid-template-columns: 1fr;
   }
 }
-/* MENÚ MÁS */
+/* ========================================
+   MENÚ MÁS · SETLIST
+======================================== */
 
 .menu-mas {
   position: relative;
 }
 
 .menu-mas-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  padding: 9px 10px;
+
   border: none;
+  border-radius: 16px;
+
   background: transparent;
   color: #174c2a;
 
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
 
-  padding: 10px 4px;
   cursor: pointer;
   white-space: nowrap;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
-.submenu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+.menu-mas-boton:hover {
+  background: #e8f3d4;
+}
 
-  min-width: 175px;
-  padding: 10px;
+.menu-mas-flecha {
+  display: inline-block;
+
+  font-size: 1rem;
+
+  transition: transform 0.25s ease;
+}
+
+.menu-mas:hover .menu-mas-flecha,
+.menu-mas:focus-within .menu-mas-flecha {
+  transform: rotate(180deg);
+}
+
+
+/* PANEL */
+
+.submenu-setlist {
+  position: absolute;
+
+  top: calc(100% + 14px);
+  right: -8px;
+
+  width: 330px;
+
+  padding: 14px;
 
   display: none;
   flex-direction: column;
-  gap: 4px;
 
-  background: #fffff4;
-  border: 1px solid #d8e7c5;
-  border-radius: 18px;
+  background:
+    radial-gradient(
+      circle at 92% 8%,
+      rgba(173, 211, 130, 0.32),
+      transparent 32%
+    ),
+    #fffdf2;
 
-  box-shadow: 0 12px 30px rgba(35, 98, 56, 0.16);
+  border: 1.5px solid rgba(83, 117, 62, 0.3);
+  border-top: 4px solid #8eaa68;
 
-  z-index: 100;
+  border-radius: 24px;
+
+  box-shadow:
+    0 18px 38px rgba(38, 74, 42, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+
+  z-index: 1000;
 }
 
-.submenu a {
-  display: block;
-  padding: 10px 14px;
 
-  border-radius: 12px;
-  text-align: left;
+/* CABECERA */
+
+.submenu-encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  padding: 7px 9px 12px;
+
+  border-bottom: 1px solid rgba(83, 117, 62, 0.15);
 }
 
-.submenu a:hover {
-  background: #e4f2ca;
+.submenu-encabezado > span {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 2.4px;
+
+  color: #5d824d;
 }
 
-.menu-mas:hover .submenu,
-.menu-mas:focus-within .submenu {
+.submenu-encabezado small {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+
+  color: #9a9b77;
+}
+
+
+/* OPCIONES */
+
+.submenu-setlist a {
+  display: grid;
+
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+
+  padding: 12px 10px;
+
+  border-radius: 16px;
+
+  color: #174c2a;
+  text-decoration: none;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.submenu-setlist a:hover {
+  background: #edf5dc;
+  transform: translateX(3px);
+}
+
+.submenu-numero {
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+
+  color: #8aa46c;
+}
+
+.submenu-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.submenu-texto strong {
+  font-size: 0.9rem;
+  line-height: 1.2;
+
+  color: #174c2a;
+}
+
+.submenu-texto small {
+  font-size: 0.7rem;
+  line-height: 1.3;
+
+  color: #71806b;
+}
+
+.submenu-flecha {
+  font-size: 1rem;
+  color: #72915d;
+
+  transition: transform 0.2s ease;
+}
+
+.submenu-setlist a:hover .submenu-flecha {
+  transform: translateX(3px);
+}
+
+
+/* PIE */
+
+.submenu-pie {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  margin-top: 5px;
+  padding: 11px 8px 4px;
+
+  border-top: 1px solid rgba(83, 117, 62, 0.15);
+
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+
+  color: #849174;
+}
+
+
+/* ABRIR */
+
+.menu-mas:hover .submenu-setlist,
+.menu-mas:focus-within .submenu-setlist {
   display: flex;
 }
+
 /* ========================================
    COMUNICADOS & NOVEDADES
 ======================================== */
@@ -2121,7 +2297,14 @@ a {
   align-items: center;
   justify-content: center;
 
-  background: #a7ce7c;
+ background:
+  radial-gradient(
+    circle at 50% 50%,
+    rgba(102, 156, 76, 0.48) 0,
+    rgba(102, 156, 76, 0.22) 28%,
+    transparent 52%
+  ),
+  #a7ce7c;
 
   font-size: 5rem;
 }

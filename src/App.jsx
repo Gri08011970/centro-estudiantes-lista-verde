@@ -1590,27 +1590,8 @@ function App() {
             </a>
 
             <a
-              href="#derechos"
-              onClick={() => {
-                setSeccionActiva("derechos");
-                setMenuMovilAbierto(false);
-              }}
-            >
-              Derechos
-            </a>
-
-            <a
-              href="#proyectos"
-              onClick={() => {
-                setSeccionActiva("proyectos");
-                setMenuMovilAbierto(false);
-              }}
-            >
-              Proyectos
-            </a>
-
-            <a
               href="#transparencia"
+              className={seccionActiva === "transparencia" ? "menu-activo" : ""}
               onClick={() => {
                 setSeccionActiva("transparencia");
                 setMenuMovilAbierto(false);
@@ -1631,10 +1612,50 @@ function App() {
 
             <div className="menu-mas">
               <button type="button" className="menu-mas-boton">
-                Más ▾
+                <span>Más</span>
+                <span className="menu-mas-flecha">⌄</span>
               </button>
 
-              <div className="submenu">
+              <div className="submenu submenu-setlist">
+                <div className="submenu-encabezado">
+                  <span>MÁS PARA EXPLORAR</span>
+                  <small>SETLIST · LISTA VERDE</small>
+                </div>
+
+                <a
+                  href="#derechos"
+                  onClick={() => {
+                    setSeccionActiva("derechos");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
+                  <span className="submenu-numero">01</span>
+
+                  <span className="submenu-texto">
+                    <strong>Derechos</strong>
+                    <small>Conocé tus derechos como estudiante</small>
+                  </span>
+
+                  <span className="submenu-flecha">→</span>
+                </a>
+
+                <a
+                  href="#proyectos"
+                  onClick={() => {
+                    setSeccionActiva("proyectos");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
+                  <span className="submenu-numero">02</span>
+
+                  <span className="submenu-texto">
+                    <strong>Proyectos</strong>
+                    <small>Ideas que se convierten en acción</small>
+                  </span>
+
+                  <span className="submenu-flecha">→</span>
+                </a>
+
                 <a
                   href="#estatuto"
                   onClick={() => {
@@ -1642,7 +1663,14 @@ function App() {
                     setMenuMovilAbierto(false);
                   }}
                 >
-                  Estatuto
+                  <span className="submenu-numero">03</span>
+
+                  <span className="submenu-texto">
+                    <strong>Estatuto</strong>
+                    <small>Nuestras reglas y organización</small>
+                  </span>
+
+                  <span className="submenu-flecha">→</span>
                 </a>
 
                 <a
@@ -1652,7 +1680,14 @@ function App() {
                     setMenuMovilAbierto(false);
                   }}
                 >
-                  Manual Digital
+                  <span className="submenu-numero">04</span>
+
+                  <span className="submenu-texto">
+                    <strong>Manual Digital</strong>
+                    <small>Una guía hecha por estudiantes</small>
+                  </span>
+
+                  <span className="submenu-flecha">→</span>
                 </a>
 
                 <a
@@ -1662,8 +1697,20 @@ function App() {
                     setMenuMovilAbierto(false);
                   }}
                 >
-                  Galería
+                  <span className="submenu-numero">05</span>
+
+                  <span className="submenu-texto">
+                    <strong>Galería</strong>
+                    <small>Momentos que construyen historia</small>
+                  </span>
+
+                  <span className="submenu-flecha">→</span>
                 </a>
+
+                <div className="submenu-pie">
+                  <span>♫</span>
+                  <span>hecho por y para estudiantes</span>
+                </div>
               </div>
             </div>
           </nav>
@@ -3767,7 +3814,6 @@ function App() {
                 </section>
               )}
 
-              
               <div className="gestion-sesion">
                 <span>🔓 Sesión de Gestión iniciada</span>
               </div>
