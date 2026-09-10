@@ -2335,7 +2335,7 @@ function App() {
                         />
 
                         <span className="tarjeta-colaboracion-etiqueta">
-                          ALIAS PARA TRANSFERENCIA
+                          ALIAS PARA DONACIÓN
                         </span>
 
                         <h4>Transferí de manera simple</h4>
