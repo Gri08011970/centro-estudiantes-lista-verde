@@ -42,6 +42,9 @@ function App() {
   });
 
   const [guardandoColaboracion, setGuardandoColaboracion] = useState(false);
+  const [galeriaGestion, setGaleriaGestion] = useState([]);
+  const [galeriaPublica, setGaleriaPublica] = useState([]);
+  const [momentoGaleriaEditando, setMomentoGaleriaEditando] = useState(null);
 
   const [historialRendicionesAbierto, setHistorialRendicionesAbierto] =
     useState(false);
@@ -50,6 +53,14 @@ function App() {
   const comunicadoDestacado = comunicados.find(
     (comunicado) => comunicado.destacado,
   );
+
+  const [formGaleria, setFormGaleria] = useState({
+    fecha: "",
+    categoria: "Actividad",
+    titulo: "",
+    descripcion: "",
+    publicado: false,
+  });
 
   const [rendicionesGestion, setRendicionesGestion] = useState([]);
 
@@ -424,6 +435,35 @@ function App() {
     movimientosConRecibo.length > 0
       ? movimientosConRecibo[movimientosConRecibo.length - 1].recibo
       : "—";
+
+  useEffect(() => {
+    if (seccionActiva !== "galeria") {
+      return;
+    }
+
+    const cargarGaleriaPublica = async () => {
+      try {
+        const apiGaleria =
+          window.location.hostname === "localhost"
+            ? "http://localhost:5000/api/galeria"
+            : "/api/galeria";
+
+        const respuesta = await fetch(apiGaleria);
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok) {
+          throw new Error(datos.mensaje || "No se pudo cargar la galería.");
+        }
+
+        setGaleriaPublica(datos);
+      } catch (error) {
+        console.error("Error al cargar galería pública:", error);
+      }
+    };
+
+    cargarGaleriaPublica();
+  }, [seccionActiva]);
 
   useEffect(() => {
     if (moduloGestionActivo !== "transparencia") {
@@ -1452,6 +1492,217 @@ function App() {
       alert("Rendición eliminada correctamente.");
     } catch (error) {
       console.error("Error al eliminar rendición:", error);
+      alert(error.message);
+    }
+  };
+
+  const cargarGaleriaGestion = async () => {
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiGaleriaGestion =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/galeria/gestion"
+          : "/api/galeria/gestion";
+
+      const respuesta = await fetch(apiGaleriaGestion, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje || "No se pudo cargar la galería de gestión.",
+        );
+      }
+
+      setGaleriaGestion(datos);
+    } catch (error) {
+      console.error("Error al cargar galería de gestión:", error);
+      alert(error.message);
+    }
+  };
+
+  const editarMomentoGaleria = (momento) => {
+    setMomentoGaleriaEditando(momento._id);
+
+    setFormGaleria({
+      fecha: momento.fecha,
+      categoria: momento.categoria || "Actividad",
+      titulo: momento.titulo,
+      descripcion: momento.descripcion || "",
+      publicado: momento.publicado,
+    });
+
+    setTimeout(() => {
+      document.getElementById("formulario-galeria")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  };
+
+  const guardarMomentoGaleria = async () => {
+    if (!formGaleria.fecha || !formGaleria.titulo.trim()) {
+      alert("Completá la fecha y el título del momento.");
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiGaleria =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/galeria"
+          : "/api/galeria";
+
+      const url = momentoGaleriaEditando
+        ? `${apiGaleria}/${momentoGaleriaEditando}`
+        : apiGaleria;
+
+      const respuesta = await fetch(url, {
+        method: momentoGaleriaEditando ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          fecha: formGaleria.fecha,
+          titulo: formGaleria.titulo,
+          descripcion: formGaleria.descripcion,
+          categoria: formGaleria.categoria,
+          medios: [],
+          publicado: formGaleria.publicado,
+        }),
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje ||
+            (momentoGaleriaEditando
+              ? "No se pudo actualizar el momento."
+              : "No se pudo guardar el momento."),
+        );
+      }
+
+      if (momentoGaleriaEditando) {
+        setGaleriaGestion((anteriores) =>
+          anteriores.map((momento) =>
+            momento._id === datos._id ? datos : momento,
+          ),
+        );
+      } else {
+        setGaleriaGestion((anteriores) => [datos, ...anteriores]);
+      }
+
+      setFormGaleria({
+        fecha: "",
+        categoria: "Actividad",
+        titulo: "",
+        descripcion: "",
+        publicado: false,
+      });
+
+      setMomentoGaleriaEditando(null);
+
+      alert(
+        momentoGaleriaEditando
+          ? "Momento actualizado correctamente."
+          : "Momento guardado correctamente.",
+      );
+    } catch (error) {
+      console.error("Error al guardar momento de galería:", error);
+      alert(error.message);
+    }
+  };
+
+  const cambiarPublicacionMomentoGaleria = async (momento) => {
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiGaleria =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/galeria"
+          : "/api/galeria";
+
+      const momentoActualizado = {
+        fecha: momento.fecha,
+        titulo: momento.titulo,
+        descripcion: momento.descripcion,
+        categoria: momento.categoria,
+        medios: momento.medios || [],
+        publicado: !momento.publicado,
+      };
+
+      const respuesta = await fetch(`${apiGaleria}/${momento._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(momentoActualizado),
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje || "No se pudo cambiar la publicación del momento.",
+        );
+      }
+
+      setGaleriaGestion((anteriores) =>
+        anteriores.map((item) => (item._id === datos._id ? datos : item)),
+      );
+    } catch (error) {
+      console.error("Error al cambiar publicación del momento:", error);
+
+      alert(error.message);
+    }
+  };
+
+  const eliminarMomentoGaleria = async (id) => {
+    const confirmar = window.confirm(
+      "¿Seguro que querés eliminar este momento de la galería?",
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiGaleria =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/galeria"
+          : "/api/galeria";
+
+      const respuesta = await fetch(`${apiGaleria}/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(datos.mensaje || "No se pudo eliminar el momento.");
+      }
+
+      setGaleriaGestion((anteriores) =>
+        anteriores.filter((momento) => momento._id !== id),
+      );
+
+      alert("Momento eliminado correctamente.");
+    } catch (error) {
+      console.error("Error al eliminar momento de galería:", error);
       alert(error.message);
     }
   };
@@ -2688,79 +2939,56 @@ function App() {
           </div>
 
           <div className="galeria-grid">
-            <article className="galeria-card">
-              <div className="galeria-imagen galeria-imagen-1">
-                <span>PRÓXIMAMENTE</span>
-              </div>
-
-              <div className="galeria-contenido">
-                <div className="galeria-meta">
-                  <span>SEPTIEMBRE 2026</span>
-                  <span>·</span>
-                  <span>CENTRO DE ESTUDIANTES</span>
-                </div>
-
-                <h3>Primeros pasos</h3>
-
-                <p>
-                  Los primeros encuentros, ideas y momentos de esta nueva etapa.
-                </p>
-
-                <button className="galeria-boton" type="button">
-                  Ver actividad →
-                </button>
-              </div>
-            </article>
-
-            <article className="galeria-card">
-              <div className="galeria-imagen galeria-imagen-2">
-                <span>FOTOS</span>
-              </div>
-
-              <div className="galeria-contenido">
-                <div className="galeria-meta">
+            {galeriaPublica.length === 0 ? (
+              <article className="galeria-card">
+                <div className="galeria-imagen galeria-imagen-1">
                   <span>PRÓXIMAMENTE</span>
-                  <span>·</span>
-                  <span>ACTIVIDADES</span>
                 </div>
 
-                <h3>Vida estudiantil</h3>
+                <div className="galeria-contenido">
+                  <h3>La historia recién empieza</h3>
 
-                <p>
-                  Jornadas, encuentros, propuestas y actividades de nuestra
-                  comunidad.
-                </p>
-
-                <button className="galeria-boton" type="button">
-                  Ver fotos →
-                </button>
-              </div>
-            </article>
-
-            <article className="galeria-card">
-              <div className="galeria-imagen galeria-imagen-3">
-                <span>VIDEOS</span>
-              </div>
-
-              <div className="galeria-contenido">
-                <div className="galeria-meta">
-                  <span>PRÓXIMAMENTE</span>
-                  <span>·</span>
-                  <span>MÚSICA</span>
+                  <p>
+                    Muy pronto vas a encontrar acá las actividades y momentos
+                    del Centro de Estudiantes.
+                  </p>
                 </div>
+              </article>
+            ) : (
+              galeriaPublica.map((momento, index) => {
+                const fechaFormateada = momento.fecha.includes("-")
+                  ? momento.fecha.split("-").reverse().join("/")
+                  : momento.fecha;
 
-                <h3>Nuestra escuela suena</h3>
+                const claseImagen = `galeria-imagen-${(index % 3) + 1}`;
 
-                <p>
-                  Presentaciones, música y momentos que reflejan la identidad de
-                  la E.E.S. N.º 50.
-                </p>
+                return (
+                  <article key={momento._id} className="galeria-card">
+                    <div className={`galeria-imagen ${claseImagen}`}>
+                      <span>
+                        {momento.categoria?.toUpperCase() || "ACTIVIDAD"}
+                      </span>
+                    </div>
 
-                <button className="galeria-boton" type="button">
-                  Ver videos →
-                </button>
-              </div>
-            </article>
+                    <div className="galeria-contenido">
+                      <div className="galeria-meta">
+                        <span>{fechaFormateada}</span>
+
+                        <span>·</span>
+
+                        <span>
+                          {momento.categoria?.toUpperCase() || "ACTIVIDAD"}
+                        </span>
+                      </div>
+
+                      <h3>{momento.titulo}</h3>
+
+                      {momento.descripcion && <p>{momento.descripcion}</p>}
+                    </div>
+                  </article>
+                );
+              })
+            )}
           </div>
 
           <div className="galeria-destacado">
@@ -2975,19 +3203,29 @@ function App() {
                       Ver mensajes →
                     </button>
                   </article>
-
                   <article className="gestion-card">
-                    <span className="gestion-icono">📷</span>
+                    <span className="gestion-icono">📸</span>
 
                     <div>
                       <span className="gestion-numero">04</span>
 
                       <h3>Galería</h3>
 
-                      <p>Cargar fotografías, videos y nuevas actividades.</p>
+                      <p>
+                        Crear y administrar momentos, fotos y videos de la
+                        historia del Centro de Estudiantes.
+                      </p>
                     </div>
 
-                    <button type="button">Administrar →</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModuloGestionActivo("galeria");
+                        cargarGaleriaGestion();
+                      }}
+                    >
+                      Administrar →
+                    </button>
                   </article>
 
                   <article className="gestion-card">
@@ -3294,6 +3532,200 @@ function App() {
                             </div>
                           </article>
                         ))}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {moduloGestionActivo === "galeria" && (
+                <section className="gestion-modulo">
+                  <button
+                    type="button"
+                    className="boton-volver-gestion"
+                    onClick={() => setModuloGestionActivo(null)}
+                  >
+                    ← Volver al panel
+                  </button>
+
+                  <div className="gestion-modulo-encabezado">
+                    <span className="mini-titulo">GALERÍA</span>
+
+                    <h2>Momentos del Centro de Estudiantes</h2>
+
+                    <p>
+                      Desde acá van a poder crear y administrar fotos, videos y
+                      recuerdos de las actividades del Centro.
+                    </p>
+                  </div>
+
+                  <div className="gestion-formulario" id="formulario-galeria">
+                    <h3>
+                      {momentoGaleriaEditando
+                        ? "Editar momento"
+                        : "Nuevo momento"}
+                    </h3>
+
+                    <div className="gestion-transparencia-fila">
+                      <label>
+                        Fecha
+                        <input
+                          type="date"
+                          Max={hoy}
+                          value={formGaleria.fecha}
+                          onChange={(e) =>
+                            setFormGaleria({
+                              ...formGaleria,
+                              fecha: e.target.value,
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Categoría
+                        <input
+                          type="text"
+                          placeholder="Ej.: Actividad, Música, Proyecto"
+                          value={formGaleria.categoria}
+                          onChange={(e) =>
+                            setFormGaleria({
+                              ...formGaleria,
+                              categoria: e.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <label>
+                      Título
+                      <input
+                        type="text"
+                        placeholder="Ej.: Jornada cultural"
+                        value={formGaleria.titulo}
+                        onChange={(e) =>
+                          setFormGaleria({
+                            ...formGaleria,
+                            titulo: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Descripción
+                      <textarea
+                        rows="3"
+                        placeholder="Contá brevemente qué pasó en esta actividad..."
+                        value={formGaleria.descripcion}
+                        onChange={(e) =>
+                          setFormGaleria({
+                            ...formGaleria,
+                            descripcion: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label className="gestion-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={formGaleria.publicado}
+                        onChange={(e) =>
+                          setFormGaleria({
+                            ...formGaleria,
+                            publicado: e.target.checked,
+                          })
+                        }
+                      />
+                      Publicar en la galería
+                    </label>
+                    <button type="button" onClick={guardarMomentoGaleria}>
+                      {momentoGaleriaEditando
+                        ? "Guardar cambios"
+                        : "Guardar momento"}
+                    </button>
+                  </div>
+                  <div className="gestion-galeria-historial">
+                    <h3>Momentos cargados</h3>
+
+                    {galeriaGestion.length === 0 ? (
+                      <p>No hay momentos cargados todavía.</p>
+                    ) : (
+                      <div className="gestion-galeria-lista">
+                        {galeriaGestion.map((momento) => {
+                          const fechaFormateada = momento.fecha.includes("-")
+                            ? momento.fecha.split("-").reverse().join("/")
+                            : momento.fecha;
+
+                          return (
+                            <article
+                              key={momento._id}
+                              className="gestion-galeria-item"
+                            >
+                              <div className="gestion-galeria-item-contenido">
+                                <div className="gestion-galeria-item-superior">
+                                  <span className="gestion-galeria-fecha">
+                                    {fechaFormateada}
+                                  </span>
+
+                                  <span
+                                    className={`gestion-galeria-estado ${
+                                      momento.publicado
+                                        ? "publicado"
+                                        : "borrador"
+                                    }`}
+                                  >
+                                    {momento.publicado
+                                      ? "Publicado"
+                                      : "Borrador"}
+                                  </span>
+                                </div>
+
+                                <h4>{momento.titulo}</h4>
+
+                                {momento.descripcion && (
+                                  <p>{momento.descripcion}</p>
+                                )}
+
+                                <span className="gestion-galeria-categoria">
+                                  {momento.categoria}
+                                </span>
+                              </div>
+
+                              <div className="gestion-galeria-acciones">
+                                <button
+                                  type="button"
+                                  className="boton-editar"
+                                  onClick={() => editarMomentoGaleria(momento)}
+                                >
+                                  ✏️ Editar
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="boton-publicar"
+                                  onClick={() =>
+                                    cambiarPublicacionMomentoGaleria(momento)
+                                  }
+                                >
+                                  {momento.publicado ? "Retirar" : "Publicar"}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="boton-eliminar"
+                                  onClick={() =>
+                                    eliminarMomentoGaleria(momento._id)
+                                  }
+                                >
+                                  🗑️ Eliminar
+                                </button>
+                              </div>
+                            </article>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
