@@ -446,7 +446,7 @@ a {
 
 .mini-titulo {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 10px; 
 
   font-size: 0.8rem;
   font-weight: 800;
@@ -485,7 +485,6 @@ a {
   grid-template-columns: repeat(2, 1fr);
   gap: 22px;
 }
-
 .integrante {
   position: relative;
 
@@ -494,21 +493,25 @@ a {
 
   background: #e1f1c5;
 
-  border: 1px solid rgba(55, 111, 62, 0.15);
+  border: 1.5px solid rgba(83, 117, 62, 0.32);
+  border-top: 4px solid #8eaa68;
+
   border-radius: 24px;
 
-  box-shadow: 0 8px 20px rgba(42, 92, 48, 0.07);
+  box-shadow:
+    0 10px 24px rgba(42, 92, 48, 0.11),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease;
 }
-
 .integrante:hover {
   transform: translateY(-5px);
 
   box-shadow:
-    0 16px 30px rgba(42, 92, 48, 0.14);
+    0 16px 30px rgba(42, 92, 48, 0.17),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 .integrante.presidenta {
@@ -583,14 +586,35 @@ a {
   grid-template-columns: repeat(3, 1fr);
   gap: 15px;
 }
-
 .vocal {
   padding: 22px;
 
   text-align: center;
 
   background: rgba(255, 255, 255, 0.12);
+
+  border: 1.5px solid rgba(223, 240, 199, 0.32);
+  border-top: 3px solid rgba(223, 240, 199, 0.72);
+
   border-radius: 20px;
+
+  box-shadow:
+    0 8px 18px rgba(18, 55, 31, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.vocal:hover {
+  transform: translateY(-4px);
+
+  background: rgba(255, 255, 255, 0.17);
+
+  box-shadow:
+    0 13px 24px rgba(18, 55, 31, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .vocal h4 {
@@ -755,7 +779,6 @@ a {
 
 
 /* DESTACADA */
-
 .novedad-destacada {
   max-width: 1100px;
   margin: 0 auto 32px;
@@ -769,10 +792,14 @@ a {
   background: #5f8f63;
   color: white;
 
-  border: 1px solid #547f59;
+  border: 1.5px solid rgba(47, 91, 54, 0.45);
+  border-top: 4px solid #8eaa68;
+
   border-radius: 32px;
 
-  box-shadow: 0 14px 30px rgba(53, 92, 59, 0.14);
+  box-shadow:
+    0 14px 30px rgba(53, 92, 59, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .novedad-destacada-contenido {
@@ -849,16 +876,19 @@ a {
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
-
 .novedad-card {
   padding: 30px;
 
   background: #fbfff5;
 
-  border: 1px solid #dce8ce;
+  border: 1.5px solid rgba(83, 117, 62, 0.3);
+  border-top: 4px solid #a9c48a;
+
   border-radius: 26px;
 
-  box-shadow: 0 8px 20px rgba(42, 92, 48, 0.06);
+  box-shadow:
+    0 10px 22px rgba(42, 92, 48, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 
   transition:
     transform 0.25s ease,
@@ -868,7 +898,9 @@ a {
 .novedad-card:hover {
   transform: translateY(-4px);
 
-  box-shadow: 0 12px 24px rgba(42, 92, 48, 0.1);
+  box-shadow:
+    0 14px 28px rgba(42, 92, 48, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 
 .novedad-card h3 {
@@ -1238,18 +1270,21 @@ a {
 
   background: #fbfff5;
 
-  border: 1px solid rgba(55, 111, 62, 0.12);
+  border: 1.5px solid rgba(83, 117, 62, 0.3);
+  border-top: 4px solid #9bb879;
+
   border-radius: 26px;
 
   text-align: center;
 
-  box-shadow: 0 8px 24px rgba(42, 92, 48, 0.06);
+  box-shadow:
+    0 10px 24px rgba(42, 92, 48, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease;
 }
-
 .derecho-card:nth-child(2),
 .derecho-card:nth-child(5) {
   background: #dcefc1;
@@ -1263,7 +1298,9 @@ a {
 .derecho-card:hover {
   transform: translateY(-5px);
 
-  box-shadow: 0 14px 30px rgba(42, 92, 48, 0.12);
+  box-shadow:
+    0 16px 30px rgba(42, 92, 48, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
 
 .derecho-icono {
@@ -1430,7 +1467,6 @@ a {
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
-
 .etapa {
   padding: 22px 18px;
 
@@ -1442,7 +1478,27 @@ a {
   text-align: center;
 
   background: #e7f2cf;
+
+  border: 1.5px solid rgba(83, 117, 62, 0.28);
+  border-top: 4px solid #a2bd80;
+
   border-radius: 22px;
+
+  box-shadow:
+    0 9px 20px rgba(42, 92, 48, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.etapa:hover {
+  transform: translateY(-4px);
+
+  box-shadow:
+    0 14px 26px rgba(42, 92, 48, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 .etapa:nth-child(2) {
@@ -1482,7 +1538,6 @@ a {
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
-
 .proyecto-card {
   min-height: 310px;
   padding: 28px;
@@ -1492,20 +1547,25 @@ a {
 
   background: #fbfff5;
 
-  border: 1px solid rgba(55, 111, 62, 0.12);
+  border: 1.5px solid rgba(83, 117, 62, 0.3);
+  border-top: 4px solid #97b776;
+
   border-radius: 28px;
 
-  box-shadow: 0 9px 24px rgba(42, 92, 48, 0.07);
+  box-shadow:
+    0 11px 26px rgba(42, 92, 48, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42);
 
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease;
 }
-
 .proyecto-card:hover {
   transform: translateY(-5px);
 
-  box-shadow: 0 15px 30px rgba(42, 92, 48, 0.13);
+  box-shadow:
+    0 17px 32px rgba(42, 92, 48, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.46);
 }
 
 .proyecto-estado {
@@ -1571,7 +1631,6 @@ a {
 .proyecto-vacio {
   align-items: center;
   justify-content: center;
-
   text-align: center;
 
   background: #dcefc2;
@@ -1580,7 +1639,6 @@ a {
 
   box-shadow: none;
 }
-
 .proyecto-mas {
   width: 55px;
   height: 55px;
@@ -2079,10 +2137,8 @@ a {
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
-
 .manual-card {
   position: relative;
-
   min-height: 240px;
   padding: 28px;
 
@@ -2091,8 +2147,12 @@ a {
 
   background: #e6f2ce;
 
-  border: 1px solid rgba(55, 111, 62, 0.12);
+  border: 1px solid rgba(83, 117, 62, 0.22);
   border-radius: 26px;
+
+  box-shadow:
+    0 10px 24px rgba(42, 92, 48, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28);
 
   transition:
     transform 0.25s ease,
@@ -2108,11 +2168,12 @@ a {
 .manual-card:nth-child(6) {
   background: #c6e0a1;
 }
-
 .manual-card:hover {
   transform: translateY(-5px);
 
-  box-shadow: 0 14px 30px rgba(42, 92, 48, 0.1);
+  box-shadow:
+    0 16px 30px rgba(42, 92, 48, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.34);
 }
 
 .manual-numero {
@@ -2245,7 +2306,7 @@ a {
 
   background: #fbfff5;
 
-  border: 1px solid rgba(55, 111, 62, 0.12);
+  border: 1.5px solid rgba(83, 117, 62, 0.28);
   border-radius: 28px;
 
   box-shadow: 0 10px 25px rgba(42, 92, 48, 0.08);
