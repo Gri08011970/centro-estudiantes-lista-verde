@@ -3057,31 +3057,56 @@ a {
 /* GUARDAR */
 
 .boton-guardar-movimiento {
-  width: 100%;
+  width: auto;
+  min-width: 210px;
 
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 
-  padding: 14px 18px;
+  align-self: flex-end;
 
-  border: none;
-  border-radius: 20px;
+  padding: 11px 22px;
+
+  border: 1px solid #285f3a;
+  border-radius: 16px;
 
   background: #2f6d42;
   color: white;
 
   font: inherit;
+  font-size: 0.9rem;
   font-weight: 800;
 
   cursor: pointer;
+
+  box-shadow: 0 5px 12px rgba(35, 80, 45, 0.14);
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.boton-guardar-movimiento span {
-  font-size: 1.3rem;
+.boton-guardar-movimiento:hover {
+  background: #285f3a;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 15px rgba(35, 80, 45, 0.18);
 }
 
+.boton-guardar-movimiento:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
+}
 
+@media (max-width: 650px) {
+  .boton-guardar-movimiento {
+    width: 100%;
+    min-width: 0;
+  }
+}
 /* HISTORIAL */
 
 .historial-header {
@@ -4432,7 +4457,6 @@ a {
   transform: translateY(1px);
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12);
 }
-
 /* ========================================
    GESTIÓN - COMUNICADOS
 ======================================== */
@@ -4894,6 +4918,7 @@ a {
 }
 .transparencia-volver {
   margin-top: 35px;
+   margin-bottom: 28px;
   text-align: center;
 }
 
@@ -5205,4 +5230,964 @@ a {
 .gestion-transparencia-colaboracion
   .campo-tesoreria label {
   color: #5f594d;
+}
+/* =========================================================
+   TRANSPARENCIA - RENDICIONES PÚBLICAS
+   ========================================================= */
+
+.transparencia-rendiciones {
+  max-width: 850px;
+  margin: 0 auto;
+
+  display: grid;
+  gap: 24px;
+}
+
+.transparencia-rendicion-card {
+  padding: 34px 38px;
+
+  background: #fffdf8;
+  border: 1px solid #dfd4c2;
+  border-radius: 28px;
+
+  box-shadow: 0 12px 28px rgba(60, 50, 35, 0.08);
+
+  text-align: left;
+}
+
+.transparencia-rendicion-fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-bottom: 14px;
+  padding: 7px 12px;
+
+  background: #f5eddd;
+  border-radius: 18px;
+
+  color: #78664a;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.transparencia-rendicion-card h3 {
+  margin: 0 0 24px;
+
+  color: #174c2a;
+  font-size: clamp(1.6rem, 3vw, 2.15rem);
+}
+
+.transparencia-rendicion-datos {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 18px;
+
+  margin-bottom: 24px;
+}
+
+.transparencia-rendicion-datos > div {
+  padding: 18px 20px;
+
+  background: #f8f2e7;
+  border: 1px solid #e7dac5;
+  border-radius: 18px;
+}
+
+.transparencia-rendicion-datos span {
+  display: block;
+  margin-bottom: 7px;
+
+  color: #8a774f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+}
+
+.transparencia-rendicion-datos strong {
+  display: block;
+
+  color: #174c2a;
+  font-size: 1.08rem;
+  line-height: 1.4;
+}
+
+.transparencia-rendicion-card > p {
+  margin: 0 0 22px;
+
+  color: #59635a;
+  line-height: 1.75;
+}
+
+.transparencia-rendicion-card > small {
+  display: block;
+
+  padding-top: 18px;
+  border-top: 1px solid #e6dece;
+
+  color: #81786a;
+  line-height: 1.6;
+}
+
+@media (max-width: 650px) {
+  .transparencia-rendicion-card {
+    padding: 26px 22px;
+  }
+
+  .transparencia-rendicion-datos {
+    grid-template-columns: 1fr;
+  }
+}
+/* =========================================================
+   TRANSPARENCIA - COLABORÁ / TARJETAS ESTILO PORTADA
+   ========================================================= */
+
+.transparencia-colabora {
+  position: relative;
+  overflow: hidden;
+
+  max-width: 900px;
+  margin: 34px auto 0;
+  padding: 48px 42px;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(196, 232, 163, 0.34),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(171, 219, 142, 0.28),
+      transparent 34%
+    ),
+    linear-gradient(
+      135deg,
+      #fffdf7 0%,
+      #f5fbe9 48%,
+      #edf8df 100%
+    );
+
+  border: 1px solid #d7e6c3;
+  border-radius: 34px;
+
+  text-align: center;
+
+  box-shadow: 0 16px 36px rgba(45, 76, 45, 0.11);
+}
+
+/* hojitas decorativas suaves */
+.transparencia-colabora::before,
+.transparencia-colabora::after {
+  content: "🌿";
+  position: absolute;
+
+  font-size: 5rem;
+  opacity: 0.08;
+
+  pointer-events: none;
+}
+
+.transparencia-colabora::before {
+  top: 10px;
+  left: 12px;
+  transform: rotate(-22deg);
+}
+
+.transparencia-colabora::after {
+  right: 10px;
+  bottom: 8px;
+  transform: rotate(20deg);
+}
+
+.transparencia-colabora-icono {
+  position: relative;
+  z-index: 2;
+
+  margin-bottom: 10px;
+  font-size: 2.4rem;
+}
+
+.transparencia-colabora-etiqueta {
+  position: relative;
+  z-index: 2;
+
+  display: inline-block;
+  margin-bottom: 14px;
+
+  color: #6d8f4e;
+
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+
+.transparencia-colabora h3 {
+  position: relative;
+  z-index: 2;
+
+  max-width: 720px;
+  margin: 0 auto 18px;
+
+  color: #174c2a;
+
+  font-size: clamp(1.9rem, 4vw, 2.8rem);
+  line-height: 1.18;
+}
+
+.transparencia-colabora > p {
+  position: relative;
+  z-index: 2;
+
+  max-width: 730px;
+  margin: 0 auto 30px;
+
+  color: #56635a;
+
+  font-size: 1.06rem;
+  line-height: 1.8;
+}
+
+/* =========================================================
+   CONTENEDOR DE TARJETAS
+   ========================================================= */
+
+.transparencia-colabora-tarjetas {
+  position: relative;
+  z-index: 2;
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+
+  max-width: 760px;
+  margin: 30px auto 28px;
+}
+
+/* =========================================================
+   TARJETA FLIP
+   ========================================================= */
+
+.tarjeta-colaboracion {
+  min-height: 330px;
+  perspective: 1200px;
+  cursor: pointer;
+}
+
+.tarjeta-colaboracion-inner {
+  position: relative;
+
+  width: 100%;
+  height: 330px;
+
+  transition: transform 0.7s ease;
+  transform-style: preserve-3d;
+}
+
+.tarjeta-colaboracion.activa .tarjeta-colaboracion-inner {
+  transform: rotateY(180deg);
+}
+
+.tarjeta-colaboracion-frente,
+.tarjeta-colaboracion-dorso {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 28px 24px;
+
+  border: 1px solid #d8e8c4;
+  border-radius: 28px;
+
+  backface-visibility: hidden;
+
+  box-shadow: 0 14px 28px rgba(54, 85, 49, 0.1);
+}
+
+/* =========================================================
+   FRENTE
+   ========================================================= */
+
+.tarjeta-colaboracion-frente {
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(191, 232, 154, 0.38),
+      transparent 35%
+    ),
+    linear-gradient(
+      145deg,
+      #fbfff4 0%,
+      #eff8df 55%,
+      #e4f3cf 100%
+    );
+}
+
+.tarjeta-colaboracion-frente-alias {
+  border-color: #cfe3b5;
+}
+
+.tarjeta-colaboracion-frente-mail {
+  border-color: #d4e7bd;
+}
+
+.tarjeta-colaboracion-tortuga {
+  width: 118px;
+  height: 118px;
+
+  margin-bottom: 14px;
+
+  object-fit: contain;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.72);
+
+  box-shadow: 0 8px 20px rgba(47, 97, 49, 0.11);
+}
+
+.tarjeta-colaboracion-etiqueta {
+  display: inline-block;
+
+  margin-bottom: 10px;
+  padding: 7px 13px;
+
+  background: rgba(190, 224, 155, 0.38);
+  color: #4e793f;
+
+  border-radius: 18px;
+
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 1.8px;
+}
+
+.tarjeta-colaboracion-frente h4 {
+  margin: 0 0 8px;
+
+  color: #174c2a;
+
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.tarjeta-colaboracion-frente p {
+  margin: 0;
+
+  color: #7c855f;
+
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+/* =========================================================
+   DORSO
+   ========================================================= */
+
+.tarjeta-colaboracion-dorso {
+  transform: rotateY(180deg);
+
+  background:
+    radial-gradient(
+      circle at bottom left,
+      rgba(194, 229, 158, 0.26),
+      transparent 35%
+    ),
+    linear-gradient(
+      145deg,
+      #fffef8 0%,
+      #f5f9e9 100%
+    );
+}
+
+.tarjeta-colaboracion-dorso strong {
+  max-width: 100%;
+
+  margin: 8px 0 20px;
+
+  color: #174c2a;
+
+  font-size: 1.22rem;
+  line-height: 1.35;
+
+  overflow-wrap: anywhere;
+}
+
+.tarjeta-colaboracion-dorso button {
+  padding: 11px 18px;
+
+  background: linear-gradient(
+    135deg,
+    #2f7b42,
+    #236238
+  );
+
+  color: white;
+
+  border: none;
+  border-radius: 18px;
+
+  font: inherit;
+  font-weight: 900;
+
+  cursor: pointer;
+
+  box-shadow: 0 8px 18px rgba(35, 98, 56, 0.18);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.tarjeta-colaboracion-dorso button:hover {
+  transform: translateY(-2px);
+
+  box-shadow: 0 10px 22px rgba(35, 98, 56, 0.23);
+}
+
+.tarjeta-colaboracion-dorso small {
+  margin-top: 16px;
+
+  color: #6d7a62;
+
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+/* =========================================================
+   CIERRE
+   ========================================================= */
+
+.transparencia-colabora > small {
+  position: relative;
+  z-index: 2;
+
+  display: block;
+
+  max-width: 700px;
+  margin: 0 auto;
+
+  padding-top: 20px;
+
+  border-top: 1px solid #d9e5c9;
+
+  color: #6f776c;
+
+  line-height: 1.6;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .transparencia-colabora {
+    padding: 34px 20px;
+  }
+
+  .transparencia-colabora-tarjetas {
+    grid-template-columns: 1fr;
+  }
+
+  .tarjeta-colaboracion {
+    min-height: 320px;
+  }
+
+  .tarjeta-colaboracion-inner {
+    height: 320px;
+  }
+
+  .tarjeta-colaboracion-tortuga {
+    width: 105px;
+    height: 105px;
+  }
+}
+/* Ajuste final de títulos de las tarjetas Colaborá */
+.tarjeta-colaboracion-frente .tarjeta-colaboracion-etiqueta {
+  display: inline-block;
+  width: auto;
+  max-width: 90%;
+
+  margin: 0 0 12px;
+  padding: 7px 14px;
+
+  background: rgba(205, 232, 174, 0.55);
+  color: #527944;
+
+  border-radius: 20px;
+
+  font-size: 0.72rem;
+  line-height: 1.2;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+
+  white-space: normal;
+  text-align: center;
+}
+/* =========================================================
+   TRANSPARENCIA - DOS COLUMNAS
+   ========================================================= */
+
+.transparencia-contenido-grid {
+  width: min(1220px, 100%);
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 440px;
+  gap: 28px;
+
+  align-items: start;
+}
+
+.transparencia-contenido-grid .transparencia-rendiciones,
+.transparencia-contenido-grid .transparencia-vacio,
+.transparencia-contenido-grid .transparencia-colabora {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .transparencia-contenido-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .transparencia-contenido-grid .transparencia-colabora {
+    margin-top: 10px;
+  }
+}
+.transparencia-contenido-grid .transparencia-colabora h3 {
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  line-height: 1.12;
+}
+.transparencia-contenido-grid .transparencia-colabora {
+  padding: 34px 26px;
+}
+
+.transparencia-contenido-grid .transparencia-colabora h3 {
+  max-width: 380px;
+  font-size: 2rem;
+  line-height: 1.08;
+}
+
+.transparencia-contenido-grid .transparencia-colabora > p {
+  max-width: 380px;
+  margin-bottom: 22px;
+
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.transparencia-contenido-grid .transparencia-colabora-tarjetas {
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.transparencia-contenido-grid .tarjeta-colaboracion,
+.transparencia-contenido-grid .tarjeta-colaboracion-inner {
+  height: 265px;
+  min-height: 265px;
+}
+
+.transparencia-contenido-grid .tarjeta-colaboracion-tortuga {
+  width: 82px;
+  height: 82px;
+  margin-bottom: 10px;
+}
+
+.transparencia-contenido-grid
+  .tarjeta-colaboracion-frente
+  .tarjeta-colaboracion-etiqueta {
+  max-width: 95%;
+  padding: 6px 10px;
+
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+}
+
+.transparencia-contenido-grid .tarjeta-colaboracion-frente h4 {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.transparencia-contenido-grid .tarjeta-colaboracion-frente p {
+  font-size: 0.9rem;
+}
+.transparencia-contenido-grid
+  .tarjeta-colaboracion-dorso
+  > strong {
+  font-size: 0.82rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.transparencia-contenido-grid
+  .tarjeta-colaboracion-dorso
+  .tarjeta-colaboracion-etiqueta {
+  position: static;
+  margin-bottom: 8px;
+}
+
+.transparencia-contenido-grid
+  .tarjeta-colaboracion-dorso {
+  padding: 20px 14px;
+}
+/* =========================================================
+   GESTIÓN - TRANSPARENCIA / COLABORÁ COMPACTO
+   ========================================================= */
+
+.gestion-transparencia-colaboracion {
+  max-width: 820px;
+  margin: 28px auto 0;
+  padding: 26px 28px;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-titulo {
+  margin-bottom: 22px;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-titulo h3 {
+  font-size: 1.55rem;
+  margin-bottom: 8px;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-titulo p {
+  max-width: 620px;
+  margin: 0 auto;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-formulario {
+  gap: 14px;
+}
+
+.gestion-transparencia-colaboracion
+  .campo-tesoreria {
+  gap: 6px;
+}
+
+.gestion-transparencia-colaboracion
+  .campo-tesoreria input {
+  padding: 11px 14px;
+  min-height: 44px;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-publicar {
+  padding: 11px 14px;
+}
+
+.gestion-transparencia-colaboracion
+  .boton-guardar-movimiento {
+  padding: 11px 18px;
+}
+.gestion-transparencia-historial-toggle {
+  width: 100%;
+  max-width: 820px;
+  margin: 26px auto 0;
+  padding: 16px 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+
+  border: 1px solid #dfcfb5;
+  border-radius: 18px;
+
+  background: #fffaf0;
+  color: #174c2a;
+
+  font: inherit;
+  cursor: pointer;
+
+  box-shadow: 0 8px 20px rgba(54, 45, 32, 0.08);
+}
+
+.gestion-transparencia-historial-toggle > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.gestion-transparencia-historial-toggle span {
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  color: #8a774f;
+}
+
+.gestion-transparencia-historial-toggle strong {
+  font-size: 1rem;
+  color: #174c2a;
+}
+/* =========================================================
+   GESTIÓN - TRANSPARENCIA MÁS COMPACTA
+   ========================================================= */
+
+.gestion-transparencia-rendiciones {
+  max-width: 860px;
+  margin: 28px auto 0;
+  padding: 26px 28px;
+}
+
+.gestion-transparencia-rendiciones
+  .gestion-transparencia-titulo {
+  margin-bottom: 20px;
+}
+
+.gestion-transparencia-rendiciones
+  .gestion-transparencia-titulo h3 {
+  font-size: 1.55rem;
+  margin-bottom: 8px;
+}
+
+.gestion-transparencia-rendiciones
+  .gestion-transparencia-titulo p {
+  max-width: 650px;
+  margin: 0 auto;
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.gestion-transparencia-rendiciones
+  .gestion-transparencia-formulario {
+  gap: 14px;
+}
+
+.gestion-transparencia-rendiciones
+  .campo-tesoreria {
+  gap: 5px;
+}
+
+.gestion-transparencia-rendiciones
+  .campo-tesoreria input {
+  min-height: 42px;
+  padding: 10px 14px;
+}
+
+.gestion-transparencia-rendiciones
+  .campo-tesoreria textarea {
+  min-height: 82px;
+  height: 82px;
+  padding: 11px 14px;
+}
+
+.gestion-transparencia-rendiciones
+  .gestion-transparencia-publicar {
+  padding: 10px 14px;
+}
+
+.gestion-transparencia-rendiciones
+  .boton-guardar-movimiento {
+  padding: 11px 18px;
+}
+
+
+/* =========================================================
+   COLABORÁ - MÁS CHICO TODAVÍA
+   ========================================================= */
+
+.gestion-transparencia-colaboracion {
+  max-width: 720px;
+  margin: 24px auto 0;
+  padding: 22px 24px;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-titulo {
+  margin-bottom: 18px;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-titulo h3 {
+  font-size: 1.4rem;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-formulario {
+  gap: 12px;
+}
+
+.gestion-transparencia-colaboracion
+  .campo-tesoreria input {
+  min-height: 40px;
+  padding: 9px 13px;
+}
+
+.gestion-transparencia-colaboracion
+  .gestion-transparencia-publicar {
+  padding: 9px 12px;
+}
+
+.gestion-transparencia-colaboracion
+  .boton-guardar-movimiento {
+  padding: 10px 16px;
+}
+
+
+/* =========================================================
+   HISTORIAL - TARJETAS Y BOTONES
+   ========================================================= */
+
+.gestion-transparencia-tarjetas {
+  max-width: 820px;
+  margin: 18px auto 0;
+  display: grid;
+  gap: 14px;
+}
+
+.gestion-transparencia-card {
+  padding: 20px 22px;
+
+  background: #fffaf0;
+  color: #174c2a;
+
+  border: 1px solid #e1d4bf;
+  border-radius: 20px;
+
+  box-shadow: 0 8px 18px rgba(54, 45, 32, 0.08);
+}
+
+.gestion-transparencia-card h4 {
+  margin: 10px 0 12px;
+  font-size: 1.2rem;
+}
+
+.gestion-transparencia-card-datos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.gestion-transparencia-card-datos p {
+  margin: 0;
+}
+
+.gestion-transparencia-card-descripcion {
+  margin: 14px 0 0;
+  line-height: 1.5;
+}
+
+.gestion-transparencia-card-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.gestion-transparencia-card-acciones button {
+  padding: 9px 13px;
+
+  border: none;
+  border-radius: 14px;
+
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.gestion-transparencia-card-acciones button:hover {
+  transform: translateY(-2px);
+}
+
+/* Editar */
+.gestion-transparencia-card-acciones button:nth-child(1) {
+  background: #f4ead8;
+  color: #6a5138;
+}
+
+/* Publicar / Retirar */
+.gestion-transparencia-card-acciones button:nth-child(2) {
+  background: #e6eef8;
+  color: #34536f;
+}
+
+/* Eliminar */
+.gestion-transparencia-card-acciones button:nth-child(3) {
+  background: #f6ded8;
+  color: #93483c;
+}
+
+@media (max-width: 650px) {
+  .gestion-transparencia-rendiciones,
+  .gestion-transparencia-colaboracion {
+    padding: 20px 16px;
+  }
+
+  .gestion-transparencia-card-datos {
+    grid-template-columns: 1fr;
+  }
+
+  .gestion-transparencia-card-acciones button {
+    flex: 1;
+  }
+}
+.gestion-transparencia-card-acciones button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+.gestion-transparencia-fila {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.gestion-transparencia-fila-corta {
+  grid-template-columns: 0.8fr 1fr;
+}
+
+.gestion-transparencia-rendiciones {
+  max-width: 780px;
+}
+
+.gestion-transparencia-rendiciones
+  .gestion-transparencia-formulario {
+  gap: 12px;
+}
+
+.gestion-transparencia-rendiciones
+  .campo-tesoreria input {
+  min-height: 40px;
+  padding: 9px 12px;
+}
+
+.gestion-transparencia-rendiciones
+  .campo-tesoreria textarea {
+  min-height: 72px;
+  height: 72px;
+}
+
+@media (max-width: 700px) {
+  .gestion-transparencia-fila,
+  .gestion-transparencia-fila-corta {
+    grid-template-columns: 1fr;
+  }
+}
+/* Más definición para las cajas principales de Transparencia */
+.transparencia-rendicion-card,
+.transparencia-colabora {
+  border: 1.5px solid rgba(83, 117, 62, 0.32);
+    border-top: 4px solid #8eaa68;
+  box-shadow:
+    0 10px 26px rgba(52, 82, 42, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
 }

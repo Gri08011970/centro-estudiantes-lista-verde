@@ -43,6 +43,8 @@ function App() {
 
   const [guardandoColaboracion, setGuardandoColaboracion] = useState(false);
 
+  const [historialRendicionesAbierto, setHistorialRendicionesAbierto] =
+    useState(false);
   const [mensajeParticipacion, setMensajeParticipacion] = useState("");
   const [errorParticipacion, setErrorParticipacion] = useState("");
   const comunicadoDestacado = comunicados.find(
@@ -81,7 +83,8 @@ function App() {
   });
 
   const [comunicadosGestion, setComunicadosGestion] = useState([]);
-
+  const [rendicionCambiandoPublicacion, setRendicionCambiandoPublicacion] =
+    useState(null);
   const [moduloGestionActivo, setModuloGestionActivo] = useState(null);
   const obtenerSeccionInicial = () => {
     const hash = window.location.hash.replace("#", "");
@@ -492,10 +495,7 @@ function App() {
           });
         }
       } catch (error) {
-        console.error(
-          "Error al cargar configuración de colaboración:",
-          error,
-        );
+        console.error("Error al cargar configuración de colaboración:", error);
       }
     };
 
@@ -1354,6 +1354,8 @@ function App() {
   };
 
   const cambiarPublicacionRendicion = async (rendicion) => {
+    setRendicionCambiandoPublicacion(rendicion._id);
+
     try {
       const token = sessionStorage.getItem("gestionToken");
 
@@ -1406,6 +1408,8 @@ function App() {
     } catch (error) {
       console.error("Error al cambiar publicación:", error);
       alert(error.message);
+    } finally {
+      setRendicionCambiandoPublicacion(null);
     }
   };
 
@@ -1453,59 +1457,85 @@ function App() {
   };
 
   const guardarColaboracion = async () => {
-  if (
-    !colaboracionGestion.alias.trim() ||
-    !colaboracionGestion.emailComprobantes.trim()
-  ) {
-    alert("Completá el alias y el mail para comprobantes.");
-    return;
-  }
-
-  try {
-    setGuardandoColaboracion(true);
-
-    const token = sessionStorage.getItem("gestionToken");
-
-    const respuesta = await fetch(
-      "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/colaboracion",
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(colaboracionGestion),
-      },
-    );
-
-    const datos = await respuesta.json();
-
-    if (!respuesta.ok) {
-      throw new Error(
-        datos.mensaje || "No se pudieron guardar los datos de colaboración.",
-      );
+    if (
+      !colaboracionGestion.alias.trim() ||
+      !colaboracionGestion.emailComprobantes.trim()
+    ) {
+      alert("Completá el alias y el mail para comprobantes.");
+      return;
     }
 
-    setColaboracionGestion({
-      alias: datos.alias || "",
-      emailComprobantes: datos.emailComprobantes || "",
-      mostrarColaboracion: Boolean(datos.mostrarColaboracion),
+    try {
+      setGuardandoColaboracion(true);
+
+      const token = sessionStorage.getItem("gestionToken");
+
+      const respuesta = await fetch(
+        "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/colaboracion",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(colaboracionGestion),
+        },
+      );
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje || "No se pudieron guardar los datos de colaboración.",
+        );
+      }
+
+      setColaboracionGestion({
+        alias: datos.alias || "",
+        emailComprobantes: datos.emailComprobantes || "",
+        mostrarColaboracion: Boolean(datos.mostrarColaboracion),
+      });
+
+      setColaboracion(datos.mostrarColaboracion ? datos : null);
+
+      alert("Datos de colaboración guardados correctamente.");
+    } catch (error) {
+      console.error("Error al guardar colaboración:", error);
+      alert(error.message);
+    } finally {
+      setGuardandoColaboracion(false);
+    }
+  };
+
+  const editarRendicion = (rendicion) => {
+    setRendicionEditando(rendicion._id);
+
+    setNuevaRendicion({
+      fecha: rendicion.fecha,
+      titulo: rendicion.titulo,
+      monto: rendicion.monto,
+      destino: rendicion.destino,
+      descripcion: rendicion.descripcion || "",
+      publicado: rendicion.publicado,
     });
 
-    setColaboracion(
-      datos.mostrarColaboracion
-        ? datos
-        : null,
-    );
+    setTimeout(() => {
+      document
+        .querySelector(".gestion-transparencia-rendiciones")
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 100);
+  };
 
-    alert("Datos de colaboración guardados correctamente.");
-  } catch (error) {
-    console.error("Error al guardar colaboración:", error);
-    alert(error.message);
-  } finally {
-    setGuardandoColaboracion(false);
-  }
-};
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "";
+
+    const [anio, mes, dia] = fecha.split("-");
+
+    return `${dia}/${mes}/${anio}`;
+  };
 
   return (
     <main className="pagina">
@@ -2170,161 +2200,189 @@ function App() {
               ← Volver al inicio
             </a>
           </div>
+          <div className="transparencia-contenido-grid">
+            {rendiciones.length === 0 ? (
+              <div className="transparencia-vacio">
+                <span className="transparencia-vacio-icono">📋</span>
 
-          {rendiciones.length === 0 ? (
-            <div className="transparencia-vacio">
-              <span className="transparencia-vacio-icono">📋</span>
+                <h3>Próximamente vas a encontrar acá nuestras rendiciones</h3>
 
-              <h3>Próximamente vas a encontrar acá nuestras rendiciones</h3>
+                <p>
+                  Publicaremos de manera clara las actividades realizadas, los
+                  fondos recaudados y el destino de los recursos.
+                </p>
 
-              <p>
-                Publicaremos de manera clara las actividades realizadas, los
-                fondos recaudados y el destino de los recursos.
-              </p>
-
-              <small>
-                Los comprobantes y el detalle completo estarán disponibles para
-                consulta en el Centro de Estudiantes.
-              </small>
-            </div>
-          ) : (
-            <div className="transparencia-rendiciones">
-              {rendiciones.map((rendicion) => (
-                <article
-                  key={rendicion._id}
-                  className="transparencia-rendicion-card"
-                >
-                  <div className="transparencia-rendicion-fecha">
-                    📅 {rendicion.fecha}
-                  </div>
-
-                  <h3>{rendicion.titulo}</h3>
-
-                  <div className="transparencia-rendicion-datos">
-                    <div>
-                      <span>RECAUDADO</span>
-                      <strong>
-                        ${Number(rendicion.monto).toLocaleString("es-AR")}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>DESTINO</span>
-                      <strong>{rendicion.destino}</strong>
-                    </div>
-                  </div>
-
-                  {rendicion.descripcion && <p>{rendicion.descripcion}</p>}
-
-                  <small>
-                    Los comprobantes y el detalle completo están disponibles
-                    para consulta en el Centro de Estudiantes.
-                  </small>
-                </article>
-              ))}
-            </div>
-          )}
-          <div className="transparencia-colabora">
-            <div className="transparencia-colabora-icono">🤝</div>
-
-            <span className="transparencia-colabora-etiqueta">
-              COLABORÁ CON EL CENTRO
-            </span>
-
-            <h3>La escuela es de todos. También se construye entre todos.</h3>
-
-            <p>
-              Si querés colaborar con las actividades y proyectos del Centro de
-              Estudiantes, podés hacerlo de manera voluntaria. Cada aporte, por
-              pequeño que sea, nos ayuda a transformar ideas en acciones para
-              nuestra escuela.
-            </p>
-
-            {colaboracion?.mostrarColaboracion ? (
-              <div className="transparencia-colabora-tarjetas">
-                <div
-                  className={`tarjeta-colaboracion ${
-                    tarjetaColaboracionActiva === "alias" ? "activa" : ""
-                  }`}
-                  onClick={() =>
-                    setTarjetaColaboracionActiva(
-                      tarjetaColaboracionActiva === "alias" ? null : "alias",
-                    )
-                  }
-                >
-                  <div className="tarjeta-colaboracion-inner">
-                    <div className="tarjeta-colaboracion-frente">
-                      <span>💸</span>
-                      <h4>Alias para transferencia</h4>
-                      <p>Tocá para ver</p>
-                    </div>
-
-                    <div className="tarjeta-colaboracion-dorso">
-                      <span>ALIAS</span>
-                      <strong>{colaboracion.alias}</strong>
-
-                      <button
-                        type="button"
-                        onClick={(evento) => {
-                          evento.stopPropagation();
-                          copiarDatoColaboracion(colaboracion.alias, "Alias");
-                        }}
-                      >
-                        📋 Copiar alias
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={`tarjeta-colaboracion ${
-                    tarjetaColaboracionActiva === "mail" ? "activa" : ""
-                  }`}
-                  onClick={() =>
-                    setTarjetaColaboracionActiva(
-                      tarjetaColaboracionActiva === "mail" ? null : "mail",
-                    )
-                  }
-                >
-                  <div className="tarjeta-colaboracion-inner">
-                    <div className="tarjeta-colaboracion-frente">
-                      <span>✉️</span>
-                      <h4>Mail para comprobantes</h4>
-                      <p>Tocá para ver</p>
-                    </div>
-
-                    <div className="tarjeta-colaboracion-dorso">
-                      <span>MAIL</span>
-                      <strong>{colaboracion.emailComprobantes}</strong>
-
-                      <button
-                        type="button"
-                        onClick={(evento) => {
-                          evento.stopPropagation();
-                          copiarDatoColaboracion(
-                            colaboracion.emailComprobantes,
-                            "Mail",
-                          );
-                        }}
-                      >
-                        📋 Copiar mail
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <small>
+                  Los comprobantes y el detalle completo estarán disponibles
+                  para consulta en el Centro de Estudiantes.
+                </small>
               </div>
             ) : (
-              <div className="transparencia-colabora-datos">
-                <p>
-                  Los datos para colaborar estarán disponibles próximamente.
-                </p>
+              <div className="transparencia-rendiciones">
+                {rendiciones.map((rendicion) => (
+                  <article
+                    key={rendicion._id}
+                    className="transparencia-rendicion-card"
+                  >
+                    <div className="transparencia-rendicion-fecha">
+                      📅 {formatearFecha(rendicion.fecha)}
+                    </div>
+
+                    <h3>{rendicion.titulo}</h3>
+
+                    <div className="transparencia-rendicion-datos">
+                      <div>
+                        <span>RECAUDADO</span>
+                        <strong>
+                          ${Number(rendicion.monto).toLocaleString("es-AR")}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>DESTINO</span>
+                        <strong>{rendicion.destino}</strong>
+                      </div>
+                    </div>
+
+                    {rendicion.descripcion && <p>{rendicion.descripcion}</p>}
+
+                    <small>
+                      Los comprobantes y el detalle completo están disponibles
+                      para consulta en el Centro de Estudiantes.
+                    </small>
+                  </article>
+                ))}
               </div>
             )}
+            <div className="transparencia-colabora">
+              <span className="transparencia-colabora-etiqueta">
+                COLABORÁ CON EL CENTRO
+              </span>
 
-            <small>
-              Cada aporte y su destino serán informados en esta sección de
-              Transparencia.
-            </small>
+              <h3>La escuela también se construye entre todos.</h3>
+
+              <p>
+                Cada aporte nos ayuda a transformar ideas en acciones para
+                nuestra escuela.
+                <strong> Elegí una opción y tocá la tarjeta.</strong>
+              </p>
+
+              {colaboracion?.mostrarColaboracion ? (
+                <div className="transparencia-colabora-tarjetas">
+                  <div
+                    className={`tarjeta-colaboracion ${
+                      tarjetaColaboracionActiva === "alias" ? "activa" : ""
+                    }`}
+                    onClick={() =>
+                      setTarjetaColaboracionActiva(
+                        tarjetaColaboracionActiva === "alias" ? null : "alias",
+                      )
+                    }
+                  >
+                    <div className="tarjeta-colaboracion-inner">
+                      <div className="tarjeta-colaboracion-frente tarjeta-colaboracion-frente-alias">
+                        <img
+                          src="/tortuga-colabora.png"
+                          alt=""
+                          className="tarjeta-colaboracion-tortuga"
+                        />
+
+                        <span className="tarjeta-colaboracion-etiqueta">
+                          ALIAS PARA TRANSFERENCIA
+                        </span>
+
+                        <h4>Transferí de manera simple</h4>
+
+                        <p>Tocá para ver</p>
+                      </div>
+
+                      <div className="tarjeta-colaboracion-dorso tarjeta-colaboracion-dorso-alias">
+                        <span className="tarjeta-colaboracion-etiqueta">
+                          ALIAS
+                        </span>
+
+                        <strong>{colaboracion.alias}</strong>
+
+                        <button
+                          type="button"
+                          onClick={(evento) => {
+                            evento.stopPropagation();
+                            copiarDatoColaboracion(colaboracion.alias, "Alias");
+                          }}
+                        >
+                          📋 Copiar alias
+                        </button>
+
+                        <small>¡Gracias por ser parte! ♡</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`tarjeta-colaboracion ${
+                      tarjetaColaboracionActiva === "mail" ? "activa" : ""
+                    }`}
+                    onClick={() =>
+                      setTarjetaColaboracionActiva(
+                        tarjetaColaboracionActiva === "mail" ? null : "mail",
+                      )
+                    }
+                  >
+                    <div className="tarjeta-colaboracion-inner">
+                      <div className="tarjeta-colaboracion-frente tarjeta-colaboracion-frente-mail">
+                        <img
+                          src="/tortuga-colabora.png"
+                          alt=""
+                          className="tarjeta-colaboracion-tortuga"
+                        />
+
+                        <span className="tarjeta-colaboracion-etiqueta">
+                          MAIL PARA COMPROBANTES
+                        </span>
+
+                        <h4>Enviá tu comprobante</h4>
+
+                        <p>Tocá para ver</p>
+                      </div>
+
+                      <div className="tarjeta-colaboracion-dorso tarjeta-colaboracion-dorso-mail">
+                        <span className="tarjeta-colaboracion-etiqueta">
+                          MAIL
+                        </span>
+
+                        <strong>{colaboracion.emailComprobantes}</strong>
+
+                        <button
+                          type="button"
+                          onClick={(evento) => {
+                            evento.stopPropagation();
+                            copiarDatoColaboracion(
+                              colaboracion.emailComprobantes,
+                              "Mail",
+                            );
+                          }}
+                        >
+                          ✉️ Copiar mail
+                        </button>
+
+                        <small>Enviá aquí tus comprobantes ♡</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="transparencia-colabora-datos">
+                  <p>
+                    Los datos para colaborar estarán disponibles próximamente.
+                  </p>
+                </div>
+              )}
+
+              <small>
+                Cada aporte y su destino serán informados en esta sección de
+                Transparencia.
+              </small>
+            </div>
           </div>
         </section>
       )}
@@ -3167,7 +3225,6 @@ function App() {
                                   ? "📤 Retirar de la página"
                                   : "🌐 Publicar en la página"}
                               </button>
-
                               <button
                                 type="button"
                                 onClick={() =>
@@ -3232,78 +3289,83 @@ function App() {
                       </div>
 
                       <div className="gestion-transparencia-formulario">
-                        <div className="campo-tesoreria">
-                          <label htmlFor="fechaRendicion">Fecha</label>
+                        <div className="gestion-transparencia-fila gestion-transparencia-fila-corta">
+                          <div className="campo-tesoreria">
+                            <label htmlFor="fechaRendicion">Fecha</label>
 
-                          <input
-                            id="fechaRendicion"
-                            type="date"
-                            value={nuevaRendicion.fecha}
-                            onChange={(e) =>
-                              setNuevaRendicion({
-                                ...nuevaRendicion,
-                                fecha: e.target.value,
-                              })
-                            }
-                          />
+                            <input
+                              id="fechaRendicion"
+                              type="date"
+                              max={hoy}
+                              value={nuevaRendicion.fecha}
+                              onChange={(e) =>
+                                setNuevaRendicion({
+                                  ...nuevaRendicion,
+                                  fecha: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div className="campo-tesoreria">
+                            <label htmlFor="montoRendicion">
+                              Monto recaudado
+                            </label>
+
+                            <input
+                              id="montoRendicion"
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={nuevaRendicion.monto}
+                              onChange={(e) =>
+                                setNuevaRendicion({
+                                  ...nuevaRendicion,
+                                  monto: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
                         </div>
 
-                        <div className="campo-tesoreria">
-                          <label htmlFor="tituloRendicion">
-                            Actividad / título
-                          </label>
+                        <div className="gestion-transparencia-fila">
+                          <div className="campo-tesoreria">
+                            <label htmlFor="tituloRendicion">
+                              Actividad / título
+                            </label>
 
-                          <input
-                            id="tituloRendicion"
-                            type="text"
-                            placeholder="Ej.: Festival del Centro de Estudiantes"
-                            value={nuevaRendicion.titulo}
-                            onChange={(e) =>
-                              setNuevaRendicion({
-                                ...nuevaRendicion,
-                                titulo: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
+                            <input
+                              id="tituloRendicion"
+                              type="text"
+                              placeholder="Ej.: Festival del Centro de Estudiantes"
+                              value={nuevaRendicion.titulo}
+                              onChange={(e) =>
+                                setNuevaRendicion({
+                                  ...nuevaRendicion,
+                                  titulo: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
 
-                        <div className="campo-tesoreria">
-                          <label htmlFor="montoRendicion">
-                            Monto recaudado
-                          </label>
+                          <div className="campo-tesoreria">
+                            <label htmlFor="destinoRendicion">
+                              Destino de los fondos
+                            </label>
 
-                          <input
-                            id="montoRendicion"
-                            type="number"
-                            min="0"
-                            placeholder="0"
-                            value={nuevaRendicion.monto}
-                            onChange={(e) =>
-                              setNuevaRendicion({
-                                ...nuevaRendicion,
-                                monto: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-
-                        <div className="campo-tesoreria">
-                          <label htmlFor="destinoRendicion">
-                            Destino de los fondos
-                          </label>
-
-                          <input
-                            id="destinoRendicion"
-                            type="text"
-                            placeholder="Ej.: Compra de materiales para..."
-                            value={nuevaRendicion.destino}
-                            onChange={(e) =>
-                              setNuevaRendicion({
-                                ...nuevaRendicion,
-                                destino: e.target.value,
-                              })
-                            }
-                          />
+                            <input
+                              id="destinoRendicion"
+                              type="text"
+                              placeholder="Ej.: Compra de materiales para..."
+                              value={nuevaRendicion.destino}
+                              onChange={(e) =>
+                                setNuevaRendicion({
+                                  ...nuevaRendicion,
+                                  destino: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
                         </div>
 
                         <div className="campo-tesoreria">
@@ -3313,7 +3375,7 @@ function App() {
 
                           <textarea
                             id="descripcionRendicion"
-                            rows="4"
+                            rows="3"
                             placeholder="Contá brevemente qué actividad se realizó..."
                             value={nuevaRendicion.descripcion}
                             onChange={(e) =>
@@ -3366,42 +3428,44 @@ function App() {
                       </div>
 
                       <div className="gestion-transparencia-formulario">
-                        <div className="campo-tesoreria">
-                          <label htmlFor="aliasColaboracion">
-                            Alias para transferencia
-                          </label>
+                        <div className="gestion-transparencia-fila">
+                          <div className="campo-tesoreria">
+                            <label htmlFor="aliasColaboracion">
+                              Alias para transferencia
+                            </label>
 
-                          <input
-                            id="aliasColaboracion"
-                            type="text"
-                            placeholder="Ej.: Listaverde.27"
-                            value={colaboracionGestion.alias}
-                            onChange={(e) =>
-                              setColaboracionGestion({
-                                ...colaboracionGestion,
-                                alias: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
+                            <input
+                              id="aliasColaboracion"
+                              type="text"
+                              placeholder="Ej.: Listaverde.27"
+                              value={colaboracionGestion.alias}
+                              onChange={(e) =>
+                                setColaboracionGestion({
+                                  ...colaboracionGestion,
+                                  alias: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
 
-                        <div className="campo-tesoreria">
-                          <label htmlFor="mailColaboracion">
-                            Mail para enviar comprobantes
-                          </label>
+                          <div className="campo-tesoreria">
+                            <label htmlFor="mailColaboracion">
+                              Mail para comprobantes
+                            </label>
 
-                          <input
-                            id="mailColaboracion"
-                            type="email"
-                            placeholder="Ej.: Listaverde.eesn50@gmail.com"
-                            value={colaboracionGestion.emailComprobantes}
-                            onChange={(e) =>
-                              setColaboracionGestion({
-                                ...colaboracionGestion,
-                                emailComprobantes: e.target.value,
-                              })
-                            }
-                          />
+                            <input
+                              id="mailColaboracion"
+                              type="email"
+                              placeholder="Ej.: Listaverde.eesn50@gmail.com"
+                              value={colaboracionGestion.emailComprobantes}
+                              onChange={(e) =>
+                                setColaboracionGestion({
+                                  ...colaboracionGestion,
+                                  emailComprobantes: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
                         </div>
 
                         <label className="gestion-transparencia-publicar">
@@ -3433,110 +3497,119 @@ function App() {
                         </button>
                       </div>
                     </section>
-
                     <section className="gestion-transparencia-listado">
-                      <div className="gestion-transparencia-listado-header">
+                      <button
+                        type="button"
+                        className="gestion-transparencia-historial-toggle"
+                        onClick={() =>
+                          setHistorialRendicionesAbierto(
+                            !historialRendicionesAbierto,
+                          )
+                        }
+                      >
                         <div>
                           <span>📚 RENDICIONES CARGADAS</span>
-                          <h3>Historial de rendiciones</h3>
+
+                          <strong>
+                            {rendicionesGestion.length}{" "}
+                            {rendicionesGestion.length === 1
+                              ? "registro"
+                              : "registros"}
+                          </strong>
                         </div>
 
-                        <strong>{rendicionesGestion.length}</strong>
-                      </div>
+                        <span>{historialRendicionesAbierto ? "▲" : "▼"}</span>
+                      </button>
 
-                      {rendicionesGestion.length === 0 ? (
-                        <div className="gestion-transparencia-vacio">
-                          Todavía no hay rendiciones cargadas.
-                        </div>
-                      ) : (
-                        <div className="gestion-transparencia-tarjetas">
-                          {rendicionesGestion.map((rendicion) => (
-                            <article
-                              key={rendicion._id}
-                              className="gestion-transparencia-card"
-                            >
-                              <div className="gestion-transparencia-card-meta">
-                                <span>📅 {rendicion.fecha}</span>
-
-                                <span>
-                                  {rendicion.publicado
-                                    ? "🟢 PUBLICADO"
-                                    : "🟡 BORRADOR"}
-                                </span>
-                              </div>
-
-                              <h4>{rendicion.titulo}</h4>
-
-                              <div className="gestion-transparencia-card-datos">
-                                <p>
-                                  <strong>Monto:</strong> $
-                                  {Number(rendicion.monto).toLocaleString(
-                                    "es-AR",
-                                  )}
-                                </p>
-
-                                <p>
-                                  <strong>Destino:</strong> {rendicion.destino}
-                                </p>
-                              </div>
-
-                              {rendicion.descripcion && (
-                                <p className="gestion-transparencia-card-descripcion">
-                                  {rendicion.descripcion}
-                                </p>
-                              )}
-
-                              <div className="gestion-transparencia-card-acciones">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRendicionEditando(rendicion._id);
-
-                                    setNuevaRendicion({
-                                      fecha: rendicion.fecha,
-                                      titulo: rendicion.titulo,
-                                      monto: rendicion.monto,
-                                      destino: rendicion.destino,
-                                      descripcion: rendicion.descripcion,
-                                      publicado: rendicion.publicado,
-                                    });
-
-                                    setTimeout(() => {
-                                      document
-                                        .querySelector(
-                                          ".gestion-transparencia-rendiciones",
-                                        )
-                                        ?.scrollIntoView({
-                                          behavior: "smooth",
-                                          block: "start",
-                                        });
-                                    }, 100);
-                                  }}
+                      {historialRendicionesAbierto && (
+                        <>
+                          {rendicionesGestion.length === 0 ? (
+                            <div className="gestion-transparencia-vacio">
+                              Todavía no hay rendiciones cargadas.
+                            </div>
+                          ) : (
+                            <div className="gestion-transparencia-tarjetas">
+                              {rendicionesGestion.map((rendicion) => (
+                                <article
+                                  key={rendicion._id}
+                                  className="gestion-transparencia-card"
                                 >
-                                  ✏️ Editar
-                                </button>
-                              </div>
+                                  <div className="gestion-transparencia-card-meta">
+                                    <span>
+                                      📅 {formatearFecha(rendicion.fecha)}
+                                    </span>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  cambiarPublicacionRendicion(rendicion)
-                                }
-                              >
-                                {rendicion.publicado
-                                  ? "📤 Retirar de la página"
-                                  : "🌐 Publicar en la página"}
-                              </button>
+                                    <span>
+                                      {rendicion.publicado
+                                        ? "🟢 PUBLICADO"
+                                        : "🟡 BORRADOR"}
+                                    </span>
+                                  </div>
 
-                              <button
-                                type="button"
-                                onClick={() => eliminarRendicion(rendicion._id)}
-                              >
-                                🗑 Eliminar
-                              </button>
-                            </article>
-                          ))}
-                        </div>
+                                  <h4>{rendicion.titulo}</h4>
+
+                                  <div className="gestion-transparencia-card-datos">
+                                    <p>
+                                      <strong>Monto:</strong> $
+                                      {Number(rendicion.monto).toLocaleString(
+                                        "es-AR",
+                                      )}
+                                    </p>
+
+                                    <p>
+                                      <strong>Destino:</strong>{" "}
+                                      {rendicion.destino}
+                                    </p>
+                                  </div>
+
+                                  {rendicion.descripcion && (
+                                    <p className="gestion-transparencia-card-descripcion">
+                                      {rendicion.descripcion}
+                                    </p>
+                                  )}
+
+                                  <div className="gestion-transparencia-card-acciones">
+                                    <button
+                                      type="button"
+                                      onClick={() => editarRendicion(rendicion)}
+                                    >
+                                      ✏️ Editar
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        rendicionCambiandoPublicacion ===
+                                        rendicion._id
+                                      }
+                                      onClick={() =>
+                                        cambiarPublicacionRendicion(rendicion)
+                                      }
+                                    >
+                                      {rendicionCambiandoPublicacion ===
+                                      rendicion._id
+                                        ? rendicion.publicado
+                                          ? "⏳ Retirando..."
+                                          : "⏳ Publicando..."
+                                        : rendicion.publicado
+                                          ? "📤 Retirar de la página"
+                                          : "🌐 Publicar en la página"}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        eliminarRendicion(rendicion._id)
+                                      }
+                                    >
+                                      🗑 Eliminar
+                                    </button>
+                                  </div>
+                                </article>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       )}
                     </section>
                   </div>
@@ -3694,21 +3767,7 @@ function App() {
                 </section>
               )}
 
-              <div className="gestion-pie">
-                <div>
-                  <span>PRÓXIMA ETAPA</span>
-
-                  <h3>De una página linda a un sistema de gestión real.</h3>
-
-                  <p>
-                    Los datos quedarán guardados y podrán administrarse sin
-                    modificar el código de la página.
-                  </p>
-                </div>
-
-                <span className="gestion-pie-icono">♫</span>
-              </div>
-
+              
               <div className="gestion-sesion">
                 <span>🔓 Sesión de Gestión iniciada</span>
               </div>
