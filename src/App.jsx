@@ -18,89 +18,18 @@ const seccionesValidas = [
 ];
 
 function App() {
+  /* ========================================
+     NAVEGACIÓN Y ESTADO GENERAL
+  ======================================== */
+
   const hoy = new Date().toISOString().split("T")[0];
-  const [comunicados, setComunicados] = useState([]);
+
   const [mostrarSubir, setMostrarSubir] = useState(false);
-  const [movimientos, setMovimientos] = useState([]);
-  const [siguienteNumeroRecibo, setSiguienteNumeroRecibo] = useState(1);
-  const [movimientoEditandoId, setMovimientoEditandoId] = useState(null);
-  const [mostrarIngresos, setMostrarIngresos] = useState(false);
-  const [mostrarEgresos, setMostrarEgresos] = useState(false);
-  const [participacion, setParticipacion] = useState({
-    curso: "",
-    motivo: "",
-    mensaje: "",
-  });
-  const [participacionesGestion, setParticipacionesGestion] = useState([]);
+
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
-  const [mostrarPassword, setMostrarPassword] = useState(false);
 
-  const [colaboracionGestion, setColaboracionGestion] = useState({
-    alias: "",
-    emailComprobantes: "",
-    mostrarColaboracion: false,
-  });
-
-  const [guardandoColaboracion, setGuardandoColaboracion] = useState(false);
-  const [galeriaGestion, setGaleriaGestion] = useState([]);
-  const [galeriaPublica, setGaleriaPublica] = useState([]);
-  const [momentoGaleriaEditando, setMomentoGaleriaEditando] = useState(null);
-  const [archivosGaleria, setArchivosGaleria] = useState([]);
-  const [mediosGaleriaEditando, setMediosGaleriaEditando] = useState([]);
-  const [momentoGaleriaAbierto, setMomentoGaleriaAbierto] = useState(null);
-  const [indiceMedioGaleria, setIndiceMedioGaleria] = useState(0);
-
-  const [historialRendicionesAbierto, setHistorialRendicionesAbierto] =
-    useState(false);
-  const [mensajeParticipacion, setMensajeParticipacion] = useState("");
-  const [errorParticipacion, setErrorParticipacion] = useState("");
-  const comunicadoDestacado = comunicados.find(
-    (comunicado) => comunicado.destacado,
-  );
-
-  const [formGaleria, setFormGaleria] = useState({
-    fecha: "",
-    categoria: "Actividad",
-    titulo: "",
-    descripcion: "",
-    publicado: false,
-  });
-
-  const [rendicionesGestion, setRendicionesGestion] = useState([]);
-
-  const [nuevaRendicion, setNuevaRendicion] = useState({
-    fecha: hoy,
-    titulo: "",
-    monto: "",
-    destino: "",
-    descripcion: "",
-    publicado: false,
-  });
-
-  const [rendicionEditando, setRendicionEditando] = useState(null);
-
-  const comunicadosSecundarios = comunicados.filter(
-    (comunicado) => !comunicado.destacado,
-  );
-  const [rendiciones, setRendiciones] = useState([]);
-
-  const [tarjetaColaboracionActiva, setTarjetaColaboracionActiva] =
-    useState(null);
-
-  const [colaboracion, setColaboracion] = useState(null);
-  const [nuevoComunicado, setNuevoComunicado] = useState({
-    fecha: hoy,
-    categoria: "",
-    titulo: "",
-    texto: "",
-    destacado: false,
-    publicado: false,
-  });
-
-  const [comunicadosGestion, setComunicadosGestion] = useState([]);
-  const [rendicionCambiandoPublicacion, setRendicionCambiandoPublicacion] =
-    useState(null);
   const [moduloGestionActivo, setModuloGestionActivo] = useState(null);
+
   const obtenerSeccionInicial = () => {
     const hash = window.location.hash.replace("#", "");
 
@@ -108,6 +37,12 @@ function App() {
   };
 
   const [seccionActiva, setSeccionActiva] = useState(obtenerSeccionInicial);
+
+  /* ========================================
+     GESTIÓN - ACCESO Y PANEL
+  ======================================== */
+
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
   const [gestionAutorizada, setGestionAutorizada] = useState(() => {
     return Boolean(sessionStorage.getItem("gestionToken"));
@@ -119,603 +54,6 @@ function App() {
   });
 
   const [errorLogin, setErrorLogin] = useState("");
-
-  const [nuevoMovimiento, setNuevoMovimiento] = useState({
-    tipo: "Ingreso",
-    fecha: "",
-    monto: "",
-    concepto: "",
-    medioPago: "",
-    observaciones: "",
-  });
-
-  const actualizarMovimiento = (campo, valor) => {
-    setNuevoMovimiento({
-      ...nuevoMovimiento,
-      [campo]: valor,
-    });
-  };
-
-  const limpiarFormularioMovimiento = () => {
-    setNuevoMovimiento({
-      tipo: "Ingreso",
-      fecha: "",
-      monto: "",
-      concepto: "",
-      medioPago: "",
-      observaciones: "",
-    });
-    setMovimientoEditandoId(null);
-  };
-
-  const guardarMovimiento = async () => {
-    if (
-      !nuevoMovimiento.fecha ||
-      !nuevoMovimiento.monto ||
-      !nuevoMovimiento.concepto ||
-      !nuevoMovimiento.medioPago
-    ) {
-      alert("Completá fecha, monto, concepto y medio de pago.");
-      return;
-    }
-
-    if (nuevoMovimiento.fecha > hoy) {
-      alert("La fecha no puede ser futura.");
-      return;
-    }
-
-    if (
-      Number(nuevoMovimiento.monto) <= 0 ||
-      !Number.isInteger(Number(nuevoMovimiento.monto))
-    ) {
-      alert("Ingresá un monto válido, sin centavos.");
-      return;
-    }
-
-    if (movimientoEditandoId !== null) {
-      try {
-        const respuesta = await fetch(
-          `https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/${movimientoEditandoId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
-            },
-            body: JSON.stringify({
-              fecha: nuevoMovimiento.fecha,
-              monto: Number(nuevoMovimiento.monto),
-              concepto: nuevoMovimiento.concepto,
-              medioPago: nuevoMovimiento.medioPago,
-              observaciones: nuevoMovimiento.observaciones,
-            }),
-          },
-        );
-
-        if (!respuesta.ok) {
-          throw new Error("No se pudo editar el movimiento.");
-        }
-
-        const movimientoActualizado = await respuesta.json();
-
-        setMovimientos((movimientosActuales) =>
-          movimientosActuales.map((movimiento) =>
-            (movimiento._id || movimiento.id) === movimientoEditandoId
-              ? movimientoActualizado
-              : movimiento,
-          ),
-        );
-
-        limpiarFormularioMovimiento();
-        return;
-      } catch (error) {
-        console.error("Error al editar movimiento:", error);
-        alert("No se pudo editar el movimiento.");
-        return;
-      }
-    }
-
-    const esEgreso = nuevoMovimiento.tipo === "Egreso";
-
-    const movimiento = {
-      id: Date.now(),
-      ...nuevoMovimiento,
-      monto: Number(nuevoMovimiento.monto),
-      recibo: esEgreso ? `${siguienteNumeroRecibo}/26` : null,
-      anulado: false,
-    };
-
-    try {
-      const respuesta = await fetch(
-        "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
-          },
-          body: JSON.stringify(movimiento),
-        },
-      );
-
-      if (!respuesta.ok) {
-        throw new Error("No se pudo guardar el movimiento.");
-      }
-
-      const movimientoGuardado = await respuesta.json();
-
-      setMovimientos((movimientosActuales) => [
-        ...movimientosActuales,
-        movimientoGuardado,
-      ]);
-
-      if (esEgreso) {
-        setSiguienteNumeroRecibo((numeroActual) => numeroActual + 1);
-      }
-
-      limpiarFormularioMovimiento();
-    } catch (error) {
-      console.error("Error al guardar movimiento:", error);
-      alert("No se pudo guardar el movimiento.");
-    }
-  };
-
-  const editarMovimiento = (movimiento) => {
-    if (movimiento.anulado) {
-      alert("Un movimiento anulado no se puede editar.");
-      return;
-    }
-
-    setMovimientoEditandoId(movimiento._id || movimiento.id);
-
-    setNuevoMovimiento({
-      tipo: movimiento.tipo,
-      fecha: movimiento.fecha,
-      monto: String(movimiento.monto),
-      concepto: movimiento.concepto,
-      medioPago: movimiento.medioPago,
-      observaciones: movimiento.observaciones || "",
-    });
-
-    document
-      .getElementById("tesoreria")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const cancelarEdicion = () => {
-    limpiarFormularioMovimiento();
-  };
-
-  const eliminarMovimiento = async (id) => {
-    const movimiento = movimientos.find((item) => (item._id || item.id) === id);
-
-    if (!movimiento) return;
-
-    const mensaje =
-      movimiento.tipo === "Egreso" && movimiento.recibo
-        ? `¿Eliminar el egreso "${movimiento.concepto}"?\n\nEl recibo ${movimiento.recibo} quedará reservado y NO volverá a utilizarse.`
-        : `¿Eliminar el ingreso "${movimiento.concepto}"?\n\nEsta acción no se puede deshacer.`;
-
-    const confirmar = window.confirm(mensaje);
-
-    if (!confirmar) return;
-
-    try {
-      const respuesta = await fetch(
-        `https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
-          },
-        },
-      );
-
-      if (!respuesta.ok) {
-        throw new Error("No se pudo eliminar el movimiento.");
-      }
-
-      setMovimientos((movimientosActuales) =>
-        movimientosActuales.filter((item) => (item._id || item.id) !== id),
-      );
-
-      if (movimientoEditandoId === id) {
-        limpiarFormularioMovimiento();
-      }
-    } catch (error) {
-      console.error("Error al eliminar movimiento:", error);
-      alert("No se pudo eliminar el movimiento.");
-    }
-  };
-
-  const anularMovimiento = async (id) => {
-    const movimiento = movimientos.find((item) => (item._id || item.id) === id);
-
-    if (!movimiento || movimiento.tipo !== "Egreso" || movimiento.anulado) {
-      return;
-    }
-
-    const confirmar = window.confirm(
-      `¿Anular el egreso "${movimiento.concepto}" con recibo ${movimiento.recibo}? El número de recibo quedará reservado y no volverá a utilizarse.`,
-    );
-
-    if (!confirmar) return;
-
-    try {
-      const respuesta = await fetch(
-        `https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/${id}/anular`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
-          },
-        },
-      );
-
-      if (!respuesta.ok) {
-        throw new Error("No se pudo anular el movimiento.");
-      }
-
-      const movimientoAnulado = await respuesta.json();
-
-      setMovimientos((movimientosActuales) =>
-        movimientosActuales.map((item) =>
-          (item._id || item.id) === id ? movimientoAnulado : item,
-        ),
-      );
-
-      if (movimientoEditandoId === id) {
-        limpiarFormularioMovimiento();
-      }
-    } catch (error) {
-      console.error("Error al anular movimiento:", error);
-      alert("No se pudo anular el movimiento.");
-    }
-  };
-
-  const movimientosIngresos = movimientos.filter(
-    (movimiento) => movimiento.tipo === "Ingreso",
-  );
-
-  const movimientosEgresos = movimientos.filter(
-    (movimiento) => movimiento.tipo === "Egreso",
-  );
-
-  const totalIngresos = movimientos
-    .filter(
-      (movimiento) => movimiento.tipo === "Ingreso" && !movimiento.anulado,
-    )
-    .reduce((total, movimiento) => total + movimiento.monto, 0);
-
-  const totalEgresos = movimientos
-    .filter((movimiento) => movimiento.tipo === "Egreso" && !movimiento.anulado)
-    .reduce((total, movimiento) => total + movimiento.monto, 0);
-
-  const balance = totalIngresos - totalEgresos;
-
-  const ingresosEfectivo = movimientos
-    .filter(
-      (movimiento) =>
-        movimiento.tipo === "Ingreso" &&
-        movimiento.medioPago === "Efectivo" &&
-        !movimiento.anulado,
-    )
-    .reduce((total, movimiento) => total + movimiento.monto, 0);
-
-  const ingresosTransferencia = movimientos
-    .filter(
-      (movimiento) =>
-        movimiento.tipo === "Ingreso" &&
-        movimiento.medioPago === "Transferencia" &&
-        !movimiento.anulado,
-    )
-    .reduce((total, movimiento) => total + movimiento.monto, 0);
-
-  const egresosEfectivo = movimientos
-    .filter(
-      (movimiento) =>
-        movimiento.tipo === "Egreso" &&
-        movimiento.medioPago === "Efectivo" &&
-        !movimiento.anulado,
-    )
-    .reduce((total, movimiento) => total + movimiento.monto, 0);
-
-  const egresosTransferencia = movimientos
-    .filter(
-      (movimiento) =>
-        movimiento.tipo === "Egreso" &&
-        movimiento.medioPago === "Transferencia" &&
-        !movimiento.anulado,
-    )
-    .reduce((total, movimiento) => total + movimiento.monto, 0);
-
-  const proximoRecibo = `${siguienteNumeroRecibo}/26`;
-
-  const movimientosConRecibo = movimientos.filter(
-    (movimiento) => movimiento.recibo,
-  );
-
-  const ultimoRecibo =
-    movimientosConRecibo.length > 0
-      ? movimientosConRecibo[movimientosConRecibo.length - 1].recibo
-      : "—";
-
-  useEffect(() => {
-    if (seccionActiva !== "galeria") {
-      return;
-    }
-
-    const cargarGaleriaPublica = async () => {
-      try {
-        const apiGaleria =
-          window.location.hostname === "localhost"
-            ? "http://localhost:5000/api/galeria"
-            : "/api/galeria";
-
-        const respuesta = await fetch(apiGaleria);
-
-        const datos = await respuesta.json();
-
-        if (!respuesta.ok) {
-          throw new Error(datos.mensaje || "No se pudo cargar la galería.");
-        }
-
-        setGaleriaPublica(datos);
-      } catch (error) {
-        console.error("Error al cargar galería pública:", error);
-      }
-    };
-
-    cargarGaleriaPublica();
-  }, [seccionActiva]);
-
-  useEffect(() => {
-    if (moduloGestionActivo !== "transparencia") {
-      return;
-    }
-
-    const cargarRendicionesGestion = async () => {
-      try {
-        const token = sessionStorage.getItem("gestionToken");
-
-        const respuesta = await fetch(
-          "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/gestion/rendiciones",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-
-        const datos = await respuesta.json();
-
-        if (!respuesta.ok) {
-          throw new Error(
-            datos.mensaje || "No se pudieron cargar las rendiciones.",
-          );
-        }
-
-        setRendicionesGestion(datos);
-      } catch (error) {
-        console.error("Error al cargar rendiciones de Gestión:", error);
-      }
-    };
-
-    cargarRendicionesGestion();
-  }, [moduloGestionActivo]);
-
-  useEffect(() => {
-    if (moduloGestionActivo !== "transparencia") {
-      return;
-    }
-
-    const cargarColaboracionGestion = async () => {
-      try {
-        const token = sessionStorage.getItem("gestionToken");
-
-        const respuesta = await fetch(
-          "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/gestion/colaboracion",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-
-        const datos = await respuesta.json();
-
-        if (!respuesta.ok) {
-          throw new Error(
-            datos.mensaje ||
-              "No se pudo cargar la configuración de colaboración.",
-          );
-        }
-
-        if (datos) {
-          setColaboracionGestion({
-            alias: datos.alias || "",
-            emailComprobantes: datos.emailComprobantes || "",
-            mostrarColaboracion: Boolean(datos.mostrarColaboracion),
-          });
-        }
-      } catch (error) {
-        console.error("Error al cargar configuración de colaboración:", error);
-      }
-    };
-
-    cargarColaboracionGestion();
-  }, [moduloGestionActivo]);
-
-  useEffect(() => {
-    const cargarComunicados = async () => {
-      try {
-        const respuesta = await fetch(
-          "https://centro-estudiantes-lista-verde.onrender.com/api/comunicados",
-        );
-
-        if (!respuesta.ok) {
-          throw new Error("No se pudieron cargar los comunicados.");
-        }
-
-        const datos = await respuesta.json();
-        setComunicados(datos);
-      } catch (error) {
-        console.error("Error al cargar comunicados:", error);
-      }
-    };
-
-    cargarComunicados();
-  }, []);
-  const [comunicadoEditando, setComunicadoEditando] = useState(null);
-
-  useEffect(() => {
-    const cargarTransparencia = async () => {
-      try {
-        const [respuestaRendiciones, respuestaColaboracion] = await Promise.all(
-          [
-            fetch(
-              "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/rendiciones",
-            ),
-            fetch(
-              "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/colaboracion",
-            ),
-          ],
-        );
-
-        if (!respuestaRendiciones.ok) {
-          throw new Error("No se pudieron cargar las rendiciones.");
-        }
-
-        if (!respuestaColaboracion.ok) {
-          throw new Error("No se pudo cargar la información de colaboración.");
-        }
-
-        const datosRendiciones = await respuestaRendiciones.json();
-        const datosColaboracion = await respuestaColaboracion.json();
-
-        setRendiciones(datosRendiciones);
-        setColaboracion(datosColaboracion);
-      } catch (error) {
-        console.error("Error al cargar Transparencia:", error);
-      }
-    };
-
-    cargarTransparencia();
-  }, []);
-
-  useEffect(() => {
-    const manejarCambioHash = () => {
-      const hash = window.location.hash.replace("#", "");
-
-      setSeccionActiva(seccionesValidas.includes(hash) ? hash : "inicio");
-    };
-
-    window.addEventListener("hashchange", manejarCambioHash);
-
-    return () => {
-      window.removeEventListener("hashchange", manejarCambioHash);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!gestionAutorizada) {
-      return;
-    }
-
-    const cargarTesoreria = async () => {
-      try {
-        const token = sessionStorage.getItem("gestionToken");
-
-        const opciones = {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        };
-
-        const [respuestaMovimientos, respuestaConfiguracion] =
-          await Promise.all([
-            fetch(
-              "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos",
-              opciones,
-            ),
-            fetch(
-              "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/configuracion/tesoreria",
-              opciones,
-            ),
-          ]);
-
-        if (!respuestaMovimientos.ok || !respuestaConfiguracion.ok) {
-          throw new Error("No se pudo cargar Tesorería.");
-        }
-
-        const datosMovimientos = await respuestaMovimientos.json();
-
-        const configuracion = await respuestaConfiguracion.json();
-
-        setMovimientos(datosMovimientos);
-
-        setSiguienteNumeroRecibo(configuracion.siguienteNumeroRecibo);
-      } catch (error) {
-        console.error("Error al cargar Tesorería:", error);
-      }
-    };
-
-    cargarTesoreria();
-  }, [gestionAutorizada]);
-
-  useEffect(() => {
-    if (!gestionAutorizada) return;
-
-    const cargarParticipaciones = async () => {
-      try {
-        const token = sessionStorage.getItem("gestionToken");
-
-        const respuesta = await fetch(
-          "https://centro-estudiantes-lista-verde.onrender.com/api/participaciones",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-
-        if (!respuesta.ok) {
-          throw new Error("No se pudieron cargar las participaciones.");
-        }
-
-        const datos = await respuesta.json();
-
-        setParticipacionesGestion(datos);
-      } catch (error) {
-        console.error("Error al cargar participaciones:", error);
-      }
-    };
-
-    cargarParticipaciones();
-  }, [gestionAutorizada]);
-
-  useEffect(() => {
-    const controlarScroll = () => {
-      setMostrarSubir(window.scrollY > 500);
-    };
-
-    window.addEventListener("scroll", controlarScroll);
-
-    return () => {
-      window.removeEventListener("scroll", controlarScroll);
-    };
-  }, []);
-
-  const volverArriba = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
-
-  const imprimirTesoreria = () => {
-    window.print();
-  };
 
   const iniciarSesionGestion = async (e) => {
     e.preventDefault();
@@ -757,62 +95,6 @@ function App() {
       setErrorLogin("No se pudo conectar con el servidor.");
     }
   };
-  const descargarTesoreria = () => {
-    if (movimientos.length === 0) {
-      alert("Todavía no hay movimientos para descargar.");
-      return;
-    }
-
-    const encabezados = [
-      "Fecha",
-      "Tipo",
-      "Concepto",
-      "Medio de pago",
-      "Monto",
-      "Recibo",
-      "Estado",
-      "Observaciones",
-    ];
-
-    const escaparCSV = (valor) => {
-      const texto = String(valor ?? "").replace(/"/g, '""');
-      return `"${texto}"`;
-    };
-
-    const filas = movimientos.map((movimiento) => [
-      movimiento.fecha
-        ? new Date(`${movimiento.fecha}T00:00:00`).toLocaleDateString("es-AR")
-        : "",
-      movimiento.tipo,
-      movimiento.concepto,
-      movimiento.medioPago,
-      movimiento.monto,
-      movimiento.recibo || "",
-      movimiento.anulado ? "ANULADO" : "ACTIVO",
-      movimiento.observaciones || "",
-    ]);
-
-    const contenidoCSV = [
-      encabezados.map(escaparCSV).join(";"),
-      ...filas.map((fila) => fila.map(escaparCSV).join(";")),
-    ].join("\n");
-
-    const blob = new Blob(["\uFEFF" + contenidoCSV], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const enlace = document.createElement("a");
-
-    enlace.href = url;
-    enlace.download = `tesoreria-centro-estudiantes-${hoy}.csv`;
-
-    document.body.appendChild(enlace);
-    enlace.click();
-    document.body.removeChild(enlace);
-
-    URL.revokeObjectURL(url);
-  };
 
   const cerrarSesionGestion = () => {
     sessionStorage.removeItem("gestionToken");
@@ -822,128 +104,53 @@ function App() {
     window.location.hash = "gestion";
   };
 
-  const cantidadMensajesNuevos = participacionesGestion.filter(
-    (participacion) => participacion.estado === "Nuevo",
-  ).length;
+  /* ========================================
+     COMUNICADOS
+  ======================================== */
 
-  const enviarParticipacion = async (e) => {
-    e.preventDefault();
+  const [comunicados, setComunicados] = useState([]);
 
-    setMensajeParticipacion("");
-    setErrorParticipacion("");
+  const [nuevoComunicado, setNuevoComunicado] = useState({
+    fecha: hoy,
+    categoria: "",
+    titulo: "",
+    texto: "",
+    destacado: false,
+    publicado: false,
+  });
 
-    if (
-      !participacion.curso ||
-      !participacion.motivo ||
-      !participacion.mensaje.trim()
-    ) {
-      setErrorParticipacion("Completá curso, motivo y mensaje.");
-      return;
-    }
+  const [comunicadosGestion, setComunicadosGestion] = useState([]);
 
-    try {
-      const respuesta = await fetch(
-        "https://centro-estudiantes-lista-verde.onrender.com/api/participaciones",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(participacion),
-        },
-      );
+  const [comunicadoEditando, setComunicadoEditando] = useState(null);
 
-      const datos = await respuesta.json();
+  const comunicadoDestacado = comunicados.find(
+    (comunicado) => comunicado.destacado,
+  );
 
-      if (!respuesta.ok) {
-        setErrorParticipacion(
-          datos.mensaje || "No se pudo enviar tu participación.",
+  const comunicadosSecundarios = comunicados.filter(
+    (comunicado) => !comunicado.destacado,
+  );
+
+  useEffect(() => {
+    const cargarComunicados = async () => {
+      try {
+        const respuesta = await fetch(
+          "https://centro-estudiantes-lista-verde.onrender.com/api/comunicados",
         );
-        return;
+
+        if (!respuesta.ok) {
+          throw new Error("No se pudieron cargar los comunicados.");
+        }
+
+        const datos = await respuesta.json();
+        setComunicados(datos);
+      } catch (error) {
+        console.error("Error al cargar comunicados:", error);
       }
+    };
 
-      setMensajeParticipacion(
-        "¡Gracias! Tu mensaje fue enviado al Centro de Estudiantes. 💚",
-      );
-
-      setParticipacion({
-        curso: "",
-        motivo: "",
-        mensaje: "",
-      });
-    } catch (error) {
-      console.error("Error al enviar participación:", error);
-
-      setErrorParticipacion("No se pudo conectar con el servidor.");
-    }
-  };
-
-  const cambiarEstadoParticipacion = async (id, nuevoEstado) => {
-    try {
-      const respuesta = await fetch(
-        `https://centro-estudiantes-lista-verde.onrender.com/api/participaciones/${id}/estado`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
-          },
-          body: JSON.stringify({
-            estado: nuevoEstado,
-          }),
-        },
-      );
-
-      if (!respuesta.ok) {
-        throw new Error("No se pudo cambiar el estado.");
-      }
-
-      const participacionActualizada = await respuesta.json();
-
-      setParticipacionesGestion((actuales) =>
-        actuales.map((participacion) =>
-          participacion._id === id ? participacionActualizada : participacion,
-        ),
-      );
-    } catch (error) {
-      console.error("Error al cambiar estado:", error);
-
-      alert("No se pudo actualizar el mensaje.");
-    }
-  };
-
-  const eliminarParticipacion = async (id) => {
-    const confirmar = window.confirm(
-      "¿Eliminar este mensaje del Buzón? Esta acción no se puede deshacer.",
-    );
-
-    if (!confirmar) return;
-
-    try {
-      const respuesta = await fetch(
-        `https://centro-estudiantes-lista-verde.onrender.com/api/participaciones/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
-          },
-        },
-      );
-
-      if (!respuesta.ok) {
-        throw new Error("No se pudo eliminar el mensaje.");
-      }
-
-      setParticipacionesGestion((actuales) =>
-        actuales.filter((participacion) => participacion._id !== id),
-      );
-
-      alert("Mensaje eliminado correctamente. ✅");
-    } catch (error) {
-      console.error("Error al eliminar participación:", error);
-      alert("No se pudo eliminar el mensaje.");
-    }
-  };
+    cargarComunicados();
+  }, []);
 
   const guardarComunicado = async () => {
     if (
@@ -1300,6 +507,812 @@ function App() {
     }
   };
 
+  /* ========================================
+     PARTICIPÁ / BUZÓN ESTUDIANTIL
+  ======================================== */
+
+  const [participacion, setParticipacion] = useState({
+    curso: "",
+    motivo: "",
+    mensaje: "",
+  });
+
+  const [participacionesGestion, setParticipacionesGestion] = useState([]);
+
+  const [mensajeParticipacion, setMensajeParticipacion] = useState("");
+  const [errorParticipacion, setErrorParticipacion] = useState("");
+
+  useEffect(() => {
+    if (!gestionAutorizada) return;
+
+    const cargarParticipaciones = async () => {
+      try {
+        const token = sessionStorage.getItem("gestionToken");
+
+        const respuesta = await fetch(
+          "https://centro-estudiantes-lista-verde.onrender.com/api/participaciones",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!respuesta.ok) {
+          throw new Error("No se pudieron cargar las participaciones.");
+        }
+
+        const datos = await respuesta.json();
+
+        setParticipacionesGestion(datos);
+      } catch (error) {
+        console.error("Error al cargar participaciones:", error);
+      }
+    };
+
+    cargarParticipaciones();
+  }, [gestionAutorizada]);
+
+  const cantidadMensajesNuevos = participacionesGestion.filter(
+    (participacion) => participacion.estado === "Nuevo",
+  ).length;
+
+  const enviarParticipacion = async (e) => {
+    e.preventDefault();
+
+    setMensajeParticipacion("");
+    setErrorParticipacion("");
+
+    if (
+      !participacion.curso ||
+      !participacion.motivo ||
+      !participacion.mensaje.trim()
+    ) {
+      setErrorParticipacion("Completá curso, motivo y mensaje.");
+      return;
+    }
+
+    try {
+      const respuesta = await fetch(
+        "https://centro-estudiantes-lista-verde.onrender.com/api/participaciones",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(participacion),
+        },
+      );
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        setErrorParticipacion(
+          datos.mensaje || "No se pudo enviar tu participación.",
+        );
+        return;
+      }
+
+      setMensajeParticipacion(
+        "¡Gracias! Tu mensaje fue enviado al Centro de Estudiantes. 💚",
+      );
+
+      setParticipacion({
+        curso: "",
+        motivo: "",
+        mensaje: "",
+      });
+    } catch (error) {
+      console.error("Error al enviar participación:", error);
+
+      setErrorParticipacion("No se pudo conectar con el servidor.");
+    }
+  };
+
+  const cambiarEstadoParticipacion = async (id, nuevoEstado) => {
+    try {
+      const respuesta = await fetch(
+        `https://centro-estudiantes-lista-verde.onrender.com/api/participaciones/${id}/estado`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
+          },
+          body: JSON.stringify({
+            estado: nuevoEstado,
+          }),
+        },
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("No se pudo cambiar el estado.");
+      }
+
+      const participacionActualizada = await respuesta.json();
+
+      setParticipacionesGestion((actuales) =>
+        actuales.map((participacion) =>
+          participacion._id === id ? participacionActualizada : participacion,
+        ),
+      );
+    } catch (error) {
+      console.error("Error al cambiar estado:", error);
+
+      alert("No se pudo actualizar el mensaje.");
+    }
+  };
+
+  const eliminarParticipacion = async (id) => {
+    const confirmar = window.confirm(
+      "¿Eliminar este mensaje del Buzón? Esta acción no se puede deshacer.",
+    );
+
+    if (!confirmar) return;
+
+    try {
+      const respuesta = await fetch(
+        `https://centro-estudiantes-lista-verde.onrender.com/api/participaciones/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
+          },
+        },
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("No se pudo eliminar el mensaje.");
+      }
+
+      setParticipacionesGestion((actuales) =>
+        actuales.filter((participacion) => participacion._id !== id),
+      );
+
+      alert("Mensaje eliminado correctamente. ✅");
+    } catch (error) {
+      console.error("Error al eliminar participación:", error);
+      alert("No se pudo eliminar el mensaje.");
+    }
+  };
+
+  /* ========================================
+     PROYECTOS
+  ======================================== */
+
+  const [proyectos, setProyectos] = useState([]);
+
+  const [proyectosGestion, setProyectosGestion] = useState([]);
+
+  const [proyectoEditando, setProyectoEditando] = useState(null);
+
+  const [nuevoProyecto, setNuevoProyecto] = useState({
+    titulo: "",
+    descripcion: "",
+    categoria: "Otra",
+    responsable: "",
+    estado: "idea",
+    fechaInicio: "",
+    proximoPaso: "",
+    publicado: false,
+    avances: [],
+  });
+
+  useEffect(() => {
+    const cargarProyectosPublicos = async () => {
+      try {
+        const apiProyectos =
+          window.location.hostname === "localhost"
+            ? "http://localhost:5000/api/proyectos"
+            : "/api/proyectos";
+
+        const respuesta = await fetch(apiProyectos);
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok) {
+          throw new Error(
+            datos.mensaje || "No se pudieron cargar los proyectos.",
+          );
+        }
+
+        setProyectos(datos);
+      } catch (error) {
+        console.error("Error al cargar proyectos públicos:", error);
+      }
+    };
+
+    cargarProyectosPublicos();
+  }, []);
+
+  useEffect(() => {
+    if (moduloGestionActivo !== "proyectos") {
+      return;
+    }
+
+    const cargarProyectosGestion = async () => {
+      try {
+        const token = sessionStorage.getItem("gestionToken");
+
+        const apiProyectosGestion =
+          window.location.hostname === "localhost"
+            ? "http://localhost:5000/api/proyectos/gestion"
+            : "/api/proyectos/gestion";
+
+        const respuesta = await fetch(apiProyectosGestion, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok) {
+          throw new Error(
+            datos.mensaje || "No se pudieron cargar los proyectos de Gestión.",
+          );
+        }
+
+        setProyectosGestion(datos);
+      } catch (error) {
+        console.error("Error al cargar proyectos de Gestión:", error);
+      }
+    };
+
+    cargarProyectosGestion();
+  }, [moduloGestionActivo]);
+
+  const limpiarFormularioProyecto = () => {
+    setNuevoProyecto({
+      titulo: "",
+      descripcion: "",
+      categoria: "Otra",
+      responsable: "",
+      estado: "idea",
+      fechaInicio: "",
+      proximoPaso: "",
+      publicado: false,
+      avances: [],
+    });
+
+    setProyectoEditando(null);
+  };
+
+  /* ========================================
+     MANUAL DIGITAL
+  ======================================== */
+
+  // Módulo en construcción 📖
+
+  /* ========================================
+     GALERÍA
+  ======================================== */
+
+  const [galeriaGestion, setGaleriaGestion] = useState([]);
+  const [galeriaPublica, setGaleriaPublica] = useState([]);
+  const [momentoGaleriaEditando, setMomentoGaleriaEditando] = useState(null);
+  const [archivosGaleria, setArchivosGaleria] = useState([]);
+  const [mediosGaleriaEditando, setMediosGaleriaEditando] = useState([]);
+  const [momentoGaleriaAbierto, setMomentoGaleriaAbierto] = useState(null);
+  const [indiceMedioGaleria, setIndiceMedioGaleria] = useState(0);
+
+  const [formGaleria, setFormGaleria] = useState({
+    fecha: "",
+    categoria: "Actividad",
+    titulo: "",
+    descripcion: "",
+    publicado: false,
+  });
+
+  useEffect(() => {
+    if (seccionActiva !== "galeria") {
+      return;
+    }
+
+    const cargarGaleriaPublica = async () => {
+      try {
+        const apiGaleria =
+          window.location.hostname === "localhost"
+            ? "http://localhost:5000/api/galeria"
+            : "/api/galeria";
+
+        const respuesta = await fetch(apiGaleria);
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok) {
+          throw new Error(datos.mensaje || "No se pudo cargar la galería.");
+        }
+
+        setGaleriaPublica(datos);
+      } catch (error) {
+        console.error("Error al cargar galería pública:", error);
+      }
+    };
+
+    cargarGaleriaPublica();
+  }, [seccionActiva]);
+
+  const cargarGaleriaGestion = async () => {
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiGaleriaGestion =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/galeria/gestion"
+          : "/api/galeria/gestion";
+
+      const respuesta = await fetch(apiGaleriaGestion, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje || "No se pudo cargar la galería de gestión.",
+        );
+      }
+
+      setGaleriaGestion(datos);
+    } catch (error) {
+      console.error("Error al cargar galería de gestión:", error);
+      alert(error.message);
+    }
+  };
+
+  const editarMomentoGaleria = (momento) => {
+    setMomentoGaleriaEditando(momento._id);
+    setMediosGaleriaEditando(momento.medios || []);
+
+    setFormGaleria({
+      fecha: momento.fecha,
+      categoria: momento.categoria || "Actividad",
+      titulo: momento.titulo,
+      descripcion: momento.descripcion || "",
+      publicado: momento.publicado,
+    });
+
+    setTimeout(() => {
+      document.getElementById("formulario-galeria")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  };
+
+  const guardarMomentoGaleria = async () => {
+    if (!formGaleria.fecha || !formGaleria.titulo.trim()) {
+      alert("Completá la fecha y el título del momento.");
+      return;
+    }
+
+    const token = sessionStorage.getItem("gestionToken");
+
+    const apiGaleria =
+      window.location.hostname === "localhost"
+        ? "http://localhost:5000/api/galeria"
+        : "/api/galeria";
+
+    let mediosSubidosEnEsteIntento = [];
+    let guardadoEnMongo = false;
+
+    try {
+      const momentoOriginal = momentoGaleriaEditando
+        ? galeriaGestion.find(
+            (momento) => momento._id === momentoGaleriaEditando,
+          )
+        : null;
+
+      const mediosOriginales = momentoOriginal?.medios || [];
+
+      let medios = momentoGaleriaEditando ? [...mediosGaleriaEditando] : [];
+
+      if (archivosGaleria.length > 0) {
+        const mediosNuevos = [];
+
+        for (const archivo of archivosGaleria) {
+          const formData = new FormData();
+          formData.append("archivo", archivo);
+
+          const respuestaUpload = await fetch(`${apiGaleria}/upload`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          const datosUpload = await respuestaUpload.json();
+
+          if (!respuestaUpload.ok) {
+            throw new Error(
+              datosUpload.mensaje || "No se pudo subir uno de los archivos.",
+            );
+          }
+
+          mediosNuevos.push(datosUpload);
+          mediosSubidosEnEsteIntento.push(datosUpload);
+        }
+
+        medios = [...medios, ...mediosNuevos];
+      }
+
+      const url = momentoGaleriaEditando
+        ? `${apiGaleria}/${momentoGaleriaEditando}`
+        : apiGaleria;
+
+      const respuesta = await fetch(url, {
+        method: momentoGaleriaEditando ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          fecha: formGaleria.fecha,
+          titulo: formGaleria.titulo,
+          descripcion: formGaleria.descripcion,
+          categoria: formGaleria.categoria,
+          medios,
+          publicado: formGaleria.publicado,
+        }),
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje ||
+            (momentoGaleriaEditando
+              ? "No se pudo actualizar el momento."
+              : "No se pudo guardar el momento."),
+        );
+      }
+
+      guardadoEnMongo = true;
+
+      if (momentoGaleriaEditando) {
+        const mediosEliminados = mediosOriginales.filter(
+          (medioOriginal) =>
+            !medios.some(
+              (medioActual) => medioActual.publicId === medioOriginal.publicId,
+            ),
+        );
+
+        for (const medioEliminado of mediosEliminados) {
+          const respuestaEliminar = await fetch(`${apiGaleria}/media`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              publicId: medioEliminado.publicId,
+              tipo: medioEliminado.tipo,
+            }),
+          });
+
+          const datosEliminar = await respuestaEliminar.json();
+
+          if (!respuestaEliminar.ok) {
+            console.error(
+              "No se pudo eliminar un archivo de Cloudinary:",
+              datosEliminar,
+            );
+          }
+        }
+
+        setGaleriaGestion((anteriores) =>
+          anteriores.map((momento) =>
+            momento._id === datos._id ? datos : momento,
+          ),
+        );
+      } else {
+        setGaleriaGestion((anteriores) => [datos, ...anteriores]);
+      }
+
+      setFormGaleria({
+        fecha: "",
+        categoria: "Actividad",
+        titulo: "",
+        descripcion: "",
+        publicado: false,
+      });
+
+      setArchivosGaleria([]);
+      setMomentoGaleriaEditando(null);
+      setMediosGaleriaEditando([]);
+
+      alert(
+        momentoGaleriaEditando
+          ? "Momento actualizado correctamente."
+          : "Momento guardado correctamente.",
+      );
+    } catch (error) {
+      console.error("Error al guardar momento de galería:", error);
+
+      if (!guardadoEnMongo && mediosSubidosEnEsteIntento.length > 0) {
+        console.warn(
+          "El guardado falló. Limpiando archivos recién subidos a Cloudinary...",
+        );
+
+        const resultadosRollback = await Promise.allSettled(
+          mediosSubidosEnEsteIntento
+            .filter((medio) => medio.publicId)
+            .map(async (medio) => {
+              const respuestaRollback = await fetch(`${apiGaleria}/media`, {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  publicId: medio.publicId,
+                  tipo: medio.tipo,
+                }),
+              });
+
+              if (!respuestaRollback.ok) {
+                throw new Error(
+                  `No se pudo limpiar ${medio.publicId} de Cloudinary.`,
+                );
+              }
+            }),
+        );
+
+        const rollbackFallidos = resultadosRollback.filter(
+          (resultado) => resultado.status === "rejected",
+        );
+
+        if (rollbackFallidos.length > 0) {
+          console.error(
+            "Algunos archivos no pudieron limpiarse durante el rollback:",
+            rollbackFallidos,
+          );
+        }
+      }
+
+      alert(error.message);
+    }
+  };
+
+  const cambiarPublicacionMomentoGaleria = async (momento) => {
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiGaleria =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/galeria"
+          : "/api/galeria";
+
+      const momentoActualizado = {
+        fecha: momento.fecha,
+        titulo: momento.titulo,
+        descripcion: momento.descripcion,
+        categoria: momento.categoria,
+        medios: momento.medios || [],
+        publicado: !momento.publicado,
+      };
+
+      const respuesta = await fetch(`${apiGaleria}/${momento._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(momentoActualizado),
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje || "No se pudo cambiar la publicación del momento.",
+        );
+      }
+
+      setGaleriaGestion((anteriores) =>
+        anteriores.map((item) => (item._id === datos._id ? datos : item)),
+      );
+    } catch (error) {
+      console.error("Error al cambiar publicación del momento:", error);
+
+      alert(error.message);
+    }
+  };
+
+  const eliminarMomentoGaleria = async (id) => {
+    const confirmar = window.confirm(
+      "¿Seguro que querés eliminar este momento de la galería? También se eliminarán sus fotos y videos.",
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiGaleria =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/galeria"
+          : "/api/galeria";
+
+      const respuesta = await fetch(`${apiGaleria}/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(datos.mensaje || "No se pudo eliminar el momento.");
+      }
+
+      setGaleriaGestion((anteriores) =>
+        anteriores.filter((momento) => momento._id !== id),
+      );
+
+      alert(datos.mensaje || "Momento eliminado correctamente.");
+    } catch (error) {
+      console.error("Error al eliminar momento de galería:", error);
+      alert(error.message);
+    }
+  };
+
+  /* ========================================
+     TRANSPARENCIA Y COLABORÁ
+  ======================================== */
+
+  const [colaboracionGestion, setColaboracionGestion] = useState({
+    alias: "",
+    emailComprobantes: "",
+    mostrarColaboracion: false,
+  });
+
+  const [guardandoColaboracion, setGuardandoColaboracion] = useState(false);
+
+  const [historialRendicionesAbierto, setHistorialRendicionesAbierto] =
+    useState(false);
+
+  const [rendicionesGestion, setRendicionesGestion] = useState([]);
+
+  const [nuevaRendicion, setNuevaRendicion] = useState({
+    fecha: hoy,
+    titulo: "",
+    monto: "",
+    destino: "",
+    descripcion: "",
+    publicado: false,
+  });
+
+  const [rendicionEditando, setRendicionEditando] = useState(null);
+
+  const [rendiciones, setRendiciones] = useState([]);
+
+  const [tarjetaColaboracionActiva, setTarjetaColaboracionActiva] =
+    useState(null);
+
+  const [colaboracion, setColaboracion] = useState(null);
+
+  const [rendicionCambiandoPublicacion, setRendicionCambiandoPublicacion] =
+    useState(null);
+
+  useEffect(() => {
+    if (moduloGestionActivo !== "transparencia") {
+      return;
+    }
+
+    const cargarRendicionesGestion = async () => {
+      try {
+        const token = sessionStorage.getItem("gestionToken");
+
+        const respuesta = await fetch(
+          "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/gestion/rendiciones",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok) {
+          throw new Error(
+            datos.mensaje || "No se pudieron cargar las rendiciones.",
+          );
+        }
+
+        setRendicionesGestion(datos);
+      } catch (error) {
+        console.error("Error al cargar rendiciones de Gestión:", error);
+      }
+    };
+
+    cargarRendicionesGestion();
+  }, [moduloGestionActivo]);
+
+  useEffect(() => {
+    if (moduloGestionActivo !== "transparencia") {
+      return;
+    }
+
+    const cargarColaboracionGestion = async () => {
+      try {
+        const token = sessionStorage.getItem("gestionToken");
+
+        const respuesta = await fetch(
+          "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/gestion/colaboracion",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok) {
+          throw new Error(
+            datos.mensaje ||
+              "No se pudo cargar la configuración de colaboración.",
+          );
+        }
+
+        if (datos) {
+          setColaboracionGestion({
+            alias: datos.alias || "",
+            emailComprobantes: datos.emailComprobantes || "",
+            mostrarColaboracion: Boolean(datos.mostrarColaboracion),
+          });
+        }
+      } catch (error) {
+        console.error("Error al cargar configuración de colaboración:", error);
+      }
+    };
+
+    cargarColaboracionGestion();
+  }, [moduloGestionActivo]);
+
+  useEffect(() => {
+    const cargarTransparencia = async () => {
+      try {
+        const [respuestaRendiciones, respuestaColaboracion] = await Promise.all(
+          [
+            fetch(
+              "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/rendiciones",
+            ),
+            fetch(
+              "https://centro-estudiantes-lista-verde.onrender.com/api/transparencia/colaboracion",
+            ),
+          ],
+        );
+
+        if (!respuestaRendiciones.ok) {
+          throw new Error("No se pudieron cargar las rendiciones.");
+        }
+
+        if (!respuestaColaboracion.ok) {
+          throw new Error("No se pudo cargar la información de colaboración.");
+        }
+
+        const datosRendiciones = await respuestaRendiciones.json();
+        const datosColaboracion = await respuestaColaboracion.json();
+
+        setRendiciones(datosRendiciones);
+        setColaboracion(datosColaboracion);
+      } catch (error) {
+        console.error("Error al cargar Transparencia:", error);
+      }
+    };
+
+    cargarTransparencia();
+  }, []);
+
   const copiarDatoColaboracion = async (texto, nombre) => {
     try {
       await navigator.clipboard.writeText(texto);
@@ -1500,340 +1513,6 @@ function App() {
     }
   };
 
-  const cargarGaleriaGestion = async () => {
-    try {
-      const token = sessionStorage.getItem("gestionToken");
-
-      const apiGaleriaGestion =
-        window.location.hostname === "localhost"
-          ? "http://localhost:5000/api/galeria/gestion"
-          : "/api/galeria/gestion";
-
-      const respuesta = await fetch(apiGaleriaGestion, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const datos = await respuesta.json();
-
-      if (!respuesta.ok) {
-        throw new Error(
-          datos.mensaje || "No se pudo cargar la galería de gestión.",
-        );
-      }
-
-      setGaleriaGestion(datos);
-    } catch (error) {
-      console.error("Error al cargar galería de gestión:", error);
-      alert(error.message);
-    }
-  };
-
-  const editarMomentoGaleria = (momento) => {
-    setMomentoGaleriaEditando(momento._id);
-    setMediosGaleriaEditando(momento.medios || []);
-
-    setFormGaleria({
-      fecha: momento.fecha,
-      categoria: momento.categoria || "Actividad",
-      titulo: momento.titulo,
-      descripcion: momento.descripcion || "",
-      publicado: momento.publicado,
-    });
-
-    setTimeout(() => {
-      document.getElementById("formulario-galeria")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 0);
-  };
-
-const guardarMomentoGaleria = async () => {
-  if (!formGaleria.fecha || !formGaleria.titulo.trim()) {
-    alert("Completá la fecha y el título del momento.");
-    return;
-  }
-
-  const token = sessionStorage.getItem("gestionToken");
-
-  const apiGaleria =
-    window.location.hostname === "localhost"
-      ? "http://localhost:5000/api/galeria"
-      : "/api/galeria";
-
-  let mediosSubidosEnEsteIntento = [];
-  let guardadoEnMongo = false;
-
-  try {
-    const momentoOriginal = momentoGaleriaEditando
-      ? galeriaGestion.find(
-          (momento) => momento._id === momentoGaleriaEditando,
-        )
-      : null;
-
-    const mediosOriginales = momentoOriginal?.medios || [];
-
-    let medios = momentoGaleriaEditando
-      ? [...mediosGaleriaEditando]
-      : [];
-
-    if (archivosGaleria.length > 0) {
-      const mediosNuevos = [];
-
-      for (const archivo of archivosGaleria) {
-        const formData = new FormData();
-        formData.append("archivo", archivo);
-
-        const respuestaUpload = await fetch(`${apiGaleria}/upload`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        const datosUpload = await respuestaUpload.json();
-
-        if (!respuestaUpload.ok) {
-          throw new Error(
-            datosUpload.mensaje || "No se pudo subir uno de los archivos.",
-          );
-        }
-
-        mediosNuevos.push(datosUpload);
-        mediosSubidosEnEsteIntento.push(datosUpload);
-      }
-
-      medios = [...medios, ...mediosNuevos];
-    }
-
-    const url = momentoGaleriaEditando
-      ? `${apiGaleria}/${momentoGaleriaEditando}`
-      : apiGaleria;
-
-    const respuesta = await fetch(url, {
-      method: momentoGaleriaEditando ? "PUT" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        fecha: formGaleria.fecha,
-        titulo: formGaleria.titulo,
-        descripcion: formGaleria.descripcion,
-        categoria: formGaleria.categoria,
-        medios,
-        publicado: formGaleria.publicado,
-      }),
-    });
-
-    const datos = await respuesta.json();
-
-    if (!respuesta.ok) {
-      throw new Error(
-        datos.mensaje ||
-          (momentoGaleriaEditando
-            ? "No se pudo actualizar el momento."
-            : "No se pudo guardar el momento."),
-      );
-    }
-
-    guardadoEnMongo = true;
-
-    if (momentoGaleriaEditando) {
-      const mediosEliminados = mediosOriginales.filter(
-        (medioOriginal) =>
-          !medios.some(
-            (medioActual) =>
-              medioActual.publicId === medioOriginal.publicId,
-          ),
-      );
-
-      for (const medioEliminado of mediosEliminados) {
-        const respuestaEliminar = await fetch(`${apiGaleria}/media`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            publicId: medioEliminado.publicId,
-            tipo: medioEliminado.tipo,
-          }),
-        });
-
-        const datosEliminar = await respuestaEliminar.json();
-
-        if (!respuestaEliminar.ok) {
-          console.error(
-            "No se pudo eliminar un archivo de Cloudinary:",
-            datosEliminar,
-          );
-        }
-      }
-
-      setGaleriaGestion((anteriores) =>
-        anteriores.map((momento) =>
-          momento._id === datos._id ? datos : momento,
-        ),
-      );
-    } else {
-      setGaleriaGestion((anteriores) => [datos, ...anteriores]);
-    }
-
-    setFormGaleria({
-      fecha: "",
-      categoria: "Actividad",
-      titulo: "",
-      descripcion: "",
-      publicado: false,
-    });
-
-    setArchivosGaleria([]);
-    setMomentoGaleriaEditando(null);
-    setMediosGaleriaEditando([]);
-
-    alert(
-      momentoGaleriaEditando
-        ? "Momento actualizado correctamente."
-        : "Momento guardado correctamente.",
-    );
-  } catch (error) {
-    console.error("Error al guardar momento de galería:", error);
-
-    if (!guardadoEnMongo && mediosSubidosEnEsteIntento.length > 0) {
-      console.warn(
-        "El guardado falló. Limpiando archivos recién subidos a Cloudinary...",
-      );
-
-      const resultadosRollback = await Promise.allSettled(
-        mediosSubidosEnEsteIntento
-          .filter((medio) => medio.publicId)
-          .map(async (medio) => {
-            const respuestaRollback = await fetch(`${apiGaleria}/media`, {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                publicId: medio.publicId,
-                tipo: medio.tipo,
-              }),
-            });
-
-            if (!respuestaRollback.ok) {
-              throw new Error(
-                `No se pudo limpiar ${medio.publicId} de Cloudinary.`,
-              );
-            }
-          }),
-      );
-
-      const rollbackFallidos = resultadosRollback.filter(
-        (resultado) => resultado.status === "rejected",
-      );
-
-      if (rollbackFallidos.length > 0) {
-        console.error(
-          "Algunos archivos no pudieron limpiarse durante el rollback:",
-          rollbackFallidos,
-        );
-      }
-    }
-
-    alert(error.message);
-  }
-};
-
-  const cambiarPublicacionMomentoGaleria = async (momento) => {
-    try {
-      const token = sessionStorage.getItem("gestionToken");
-
-      const apiGaleria =
-        window.location.hostname === "localhost"
-          ? "http://localhost:5000/api/galeria"
-          : "/api/galeria";
-
-      const momentoActualizado = {
-        fecha: momento.fecha,
-        titulo: momento.titulo,
-        descripcion: momento.descripcion,
-        categoria: momento.categoria,
-        medios: momento.medios || [],
-        publicado: !momento.publicado,
-      };
-
-      const respuesta = await fetch(`${apiGaleria}/${momento._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(momentoActualizado),
-      });
-
-      const datos = await respuesta.json();
-
-      if (!respuesta.ok) {
-        throw new Error(
-          datos.mensaje || "No se pudo cambiar la publicación del momento.",
-        );
-      }
-
-      setGaleriaGestion((anteriores) =>
-        anteriores.map((item) => (item._id === datos._id ? datos : item)),
-      );
-    } catch (error) {
-      console.error("Error al cambiar publicación del momento:", error);
-
-      alert(error.message);
-    }
-  };
-
-  const eliminarMomentoGaleria = async (id) => {
-  const confirmar = window.confirm(
-    "¿Seguro que querés eliminar este momento de la galería? También se eliminarán sus fotos y videos.",
-  );
-
-  if (!confirmar) {
-    return;
-  }
-
-  try {
-    const token = sessionStorage.getItem("gestionToken");
-
-    const apiGaleria =
-      window.location.hostname === "localhost"
-        ? "http://localhost:5000/api/galeria"
-        : "/api/galeria";
-
-    const respuesta = await fetch(`${apiGaleria}/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const datos = await respuesta.json();
-
-    if (!respuesta.ok) {
-      throw new Error(datos.mensaje || "No se pudo eliminar el momento.");
-    }
-
-    setGaleriaGestion((anteriores) =>
-      anteriores.filter((momento) => momento._id !== id),
-    );
-
-    alert(datos.mensaje || "Momento eliminado correctamente.");
-  } catch (error) {
-    console.error("Error al eliminar momento de galería:", error);
-    alert(error.message);
-  }
-};
-
   const guardarColaboracion = async () => {
     if (
       !colaboracionGestion.alias.trim() ||
@@ -1907,6 +1586,484 @@ const guardarMomentoGaleria = async () => {
     }, 100);
   };
 
+  /* ========================================
+     TESORERÍA
+  ======================================== */
+
+  const [movimientos, setMovimientos] = useState([]);
+  const [siguienteNumeroRecibo, setSiguienteNumeroRecibo] = useState(1);
+  const [movimientoEditandoId, setMovimientoEditandoId] = useState(null);
+  const [mostrarIngresos, setMostrarIngresos] = useState(false);
+  const [mostrarEgresos, setMostrarEgresos] = useState(false);
+
+  const [nuevoMovimiento, setNuevoMovimiento] = useState({
+    tipo: "Ingreso",
+    fecha: "",
+    monto: "",
+    concepto: "",
+    medioPago: "",
+    observaciones: "",
+  });
+
+  const actualizarMovimiento = (campo, valor) => {
+    setNuevoMovimiento({
+      ...nuevoMovimiento,
+      [campo]: valor,
+    });
+  };
+
+  const limpiarFormularioMovimiento = () => {
+    setNuevoMovimiento({
+      tipo: "Ingreso",
+      fecha: "",
+      monto: "",
+      concepto: "",
+      medioPago: "",
+      observaciones: "",
+    });
+    setMovimientoEditandoId(null);
+  };
+
+  const guardarMovimiento = async () => {
+    if (
+      !nuevoMovimiento.fecha ||
+      !nuevoMovimiento.monto ||
+      !nuevoMovimiento.concepto ||
+      !nuevoMovimiento.medioPago
+    ) {
+      alert("Completá fecha, monto, concepto y medio de pago.");
+      return;
+    }
+
+    if (nuevoMovimiento.fecha > hoy) {
+      alert("La fecha no puede ser futura.");
+      return;
+    }
+
+    if (
+      Number(nuevoMovimiento.monto) <= 0 ||
+      !Number.isInteger(Number(nuevoMovimiento.monto))
+    ) {
+      alert("Ingresá un monto válido, sin centavos.");
+      return;
+    }
+
+    if (movimientoEditandoId !== null) {
+      try {
+        const respuesta = await fetch(
+          `https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/${movimientoEditandoId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
+            },
+            body: JSON.stringify({
+              fecha: nuevoMovimiento.fecha,
+              monto: Number(nuevoMovimiento.monto),
+              concepto: nuevoMovimiento.concepto,
+              medioPago: nuevoMovimiento.medioPago,
+              observaciones: nuevoMovimiento.observaciones,
+            }),
+          },
+        );
+
+        if (!respuesta.ok) {
+          throw new Error("No se pudo editar el movimiento.");
+        }
+
+        const movimientoActualizado = await respuesta.json();
+
+        setMovimientos((movimientosActuales) =>
+          movimientosActuales.map((movimiento) =>
+            (movimiento._id || movimiento.id) === movimientoEditandoId
+              ? movimientoActualizado
+              : movimiento,
+          ),
+        );
+
+        limpiarFormularioMovimiento();
+        return;
+      } catch (error) {
+        console.error("Error al editar movimiento:", error);
+        alert("No se pudo editar el movimiento.");
+        return;
+      }
+    }
+
+    const esEgreso = nuevoMovimiento.tipo === "Egreso";
+
+    const movimiento = {
+      id: Date.now(),
+      ...nuevoMovimiento,
+      monto: Number(nuevoMovimiento.monto),
+      recibo: esEgreso ? `${siguienteNumeroRecibo}/26` : null,
+      anulado: false,
+    };
+
+    try {
+      const respuesta = await fetch(
+        "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
+          },
+          body: JSON.stringify(movimiento),
+        },
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("No se pudo guardar el movimiento.");
+      }
+
+      const movimientoGuardado = await respuesta.json();
+
+      setMovimientos((movimientosActuales) => [
+        ...movimientosActuales,
+        movimientoGuardado,
+      ]);
+
+      if (esEgreso) {
+        setSiguienteNumeroRecibo((numeroActual) => numeroActual + 1);
+      }
+
+      limpiarFormularioMovimiento();
+    } catch (error) {
+      console.error("Error al guardar movimiento:", error);
+      alert("No se pudo guardar el movimiento.");
+    }
+  };
+
+  const editarMovimiento = (movimiento) => {
+    if (movimiento.anulado) {
+      alert("Un movimiento anulado no se puede editar.");
+      return;
+    }
+
+    setMovimientoEditandoId(movimiento._id || movimiento.id);
+
+    setNuevoMovimiento({
+      tipo: movimiento.tipo,
+      fecha: movimiento.fecha,
+      monto: String(movimiento.monto),
+      concepto: movimiento.concepto,
+      medioPago: movimiento.medioPago,
+      observaciones: movimiento.observaciones || "",
+    });
+
+    document
+      .getElementById("tesoreria")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const cancelarEdicion = () => {
+    limpiarFormularioMovimiento();
+  };
+
+  const eliminarMovimiento = async (id) => {
+    const movimiento = movimientos.find((item) => (item._id || item.id) === id);
+
+    if (!movimiento) return;
+
+    const mensaje =
+      movimiento.tipo === "Egreso" && movimiento.recibo
+        ? `¿Eliminar el egreso "${movimiento.concepto}"?\n\nEl recibo ${movimiento.recibo} quedará reservado y NO volverá a utilizarse.`
+        : `¿Eliminar el ingreso "${movimiento.concepto}"?\n\nEsta acción no se puede deshacer.`;
+
+    const confirmar = window.confirm(mensaje);
+
+    if (!confirmar) return;
+
+    try {
+      const respuesta = await fetch(
+        `https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
+          },
+        },
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("No se pudo eliminar el movimiento.");
+      }
+
+      setMovimientos((movimientosActuales) =>
+        movimientosActuales.filter((item) => (item._id || item.id) !== id),
+      );
+
+      if (movimientoEditandoId === id) {
+        limpiarFormularioMovimiento();
+      }
+    } catch (error) {
+      console.error("Error al eliminar movimiento:", error);
+      alert("No se pudo eliminar el movimiento.");
+    }
+  };
+
+  const anularMovimiento = async (id) => {
+    const movimiento = movimientos.find((item) => (item._id || item.id) === id);
+
+    if (!movimiento || movimiento.tipo !== "Egreso" || movimiento.anulado) {
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `¿Anular el egreso "${movimiento.concepto}" con recibo ${movimiento.recibo}? El número de recibo quedará reservado y no volverá a utilizarse.`,
+    );
+
+    if (!confirmar) return;
+
+    try {
+      const respuesta = await fetch(
+        `https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/${id}/anular`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("gestionToken")}`,
+          },
+        },
+      );
+
+      if (!respuesta.ok) {
+        throw new Error("No se pudo anular el movimiento.");
+      }
+
+      const movimientoAnulado = await respuesta.json();
+
+      setMovimientos((movimientosActuales) =>
+        movimientosActuales.map((item) =>
+          (item._id || item.id) === id ? movimientoAnulado : item,
+        ),
+      );
+
+      if (movimientoEditandoId === id) {
+        limpiarFormularioMovimiento();
+      }
+    } catch (error) {
+      console.error("Error al anular movimiento:", error);
+      alert("No se pudo anular el movimiento.");
+    }
+  };
+
+  const movimientosIngresos = movimientos.filter(
+    (movimiento) => movimiento.tipo === "Ingreso",
+  );
+
+  const movimientosEgresos = movimientos.filter(
+    (movimiento) => movimiento.tipo === "Egreso",
+  );
+
+  const totalIngresos = movimientos
+    .filter(
+      (movimiento) => movimiento.tipo === "Ingreso" && !movimiento.anulado,
+    )
+    .reduce((total, movimiento) => total + movimiento.monto, 0);
+
+  const totalEgresos = movimientos
+    .filter((movimiento) => movimiento.tipo === "Egreso" && !movimiento.anulado)
+    .reduce((total, movimiento) => total + movimiento.monto, 0);
+
+  const balance = totalIngresos - totalEgresos;
+
+  const ingresosEfectivo = movimientos
+    .filter(
+      (movimiento) =>
+        movimiento.tipo === "Ingreso" &&
+        movimiento.medioPago === "Efectivo" &&
+        !movimiento.anulado,
+    )
+    .reduce((total, movimiento) => total + movimiento.monto, 0);
+
+  const ingresosTransferencia = movimientos
+    .filter(
+      (movimiento) =>
+        movimiento.tipo === "Ingreso" &&
+        movimiento.medioPago === "Transferencia" &&
+        !movimiento.anulado,
+    )
+    .reduce((total, movimiento) => total + movimiento.monto, 0);
+
+  const egresosEfectivo = movimientos
+    .filter(
+      (movimiento) =>
+        movimiento.tipo === "Egreso" &&
+        movimiento.medioPago === "Efectivo" &&
+        !movimiento.anulado,
+    )
+    .reduce((total, movimiento) => total + movimiento.monto, 0);
+
+  const egresosTransferencia = movimientos
+    .filter(
+      (movimiento) =>
+        movimiento.tipo === "Egreso" &&
+        movimiento.medioPago === "Transferencia" &&
+        !movimiento.anulado,
+    )
+    .reduce((total, movimiento) => total + movimiento.monto, 0);
+
+  const proximoRecibo = `${siguienteNumeroRecibo}/26`;
+
+  const movimientosConRecibo = movimientos.filter(
+    (movimiento) => movimiento.recibo,
+  );
+
+  const ultimoRecibo =
+    movimientosConRecibo.length > 0
+      ? movimientosConRecibo[movimientosConRecibo.length - 1].recibo
+      : "—";
+
+  useEffect(() => {
+    if (!gestionAutorizada) {
+      return;
+    }
+
+    const cargarTesoreria = async () => {
+      try {
+        const token = sessionStorage.getItem("gestionToken");
+
+        const opciones = {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+
+        const [respuestaMovimientos, respuestaConfiguracion] =
+          await Promise.all([
+            fetch(
+              "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos",
+              opciones,
+            ),
+            fetch(
+              "https://centro-estudiantes-lista-verde.onrender.com/api/movimientos/configuracion/tesoreria",
+              opciones,
+            ),
+          ]);
+
+        if (!respuestaMovimientos.ok || !respuestaConfiguracion.ok) {
+          throw new Error("No se pudo cargar Tesorería.");
+        }
+
+        const datosMovimientos = await respuestaMovimientos.json();
+
+        const configuracion = await respuestaConfiguracion.json();
+
+        setMovimientos(datosMovimientos);
+
+        setSiguienteNumeroRecibo(configuracion.siguienteNumeroRecibo);
+      } catch (error) {
+        console.error("Error al cargar Tesorería:", error);
+      }
+    };
+
+    cargarTesoreria();
+  }, [gestionAutorizada]);
+
+  const imprimirTesoreria = () => {
+    window.print();
+  };
+
+  const descargarTesoreria = () => {
+    if (movimientos.length === 0) {
+      alert("Todavía no hay movimientos para descargar.");
+      return;
+    }
+
+    const encabezados = [
+      "Fecha",
+      "Tipo",
+      "Concepto",
+      "Medio de pago",
+      "Monto",
+      "Recibo",
+      "Estado",
+      "Observaciones",
+    ];
+
+    const escaparCSV = (valor) => {
+      const texto = String(valor ?? "").replace(/"/g, '""');
+      return `"${texto}"`;
+    };
+
+    const filas = movimientos.map((movimiento) => [
+      movimiento.fecha
+        ? new Date(`${movimiento.fecha}T00:00:00`).toLocaleDateString("es-AR")
+        : "",
+      movimiento.tipo,
+      movimiento.concepto,
+      movimiento.medioPago,
+      movimiento.monto,
+      movimiento.recibo || "",
+      movimiento.anulado ? "ANULADO" : "ACTIVO",
+      movimiento.observaciones || "",
+    ]);
+
+    const contenidoCSV = [
+      encabezados.map(escaparCSV).join(";"),
+      ...filas.map((fila) => fila.map(escaparCSV).join(";")),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + contenidoCSV], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+
+    enlace.href = url;
+    enlace.download = `tesoreria-centro-estudiantes-${hoy}.csv`;
+
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+
+    URL.revokeObjectURL(url);
+  };
+
+  /* ========================================
+     EFECTOS GENERALES
+  ======================================== */
+
+  useEffect(() => {
+    const manejarCambioHash = () => {
+      const hash = window.location.hash.replace("#", "");
+
+      setSeccionActiva(seccionesValidas.includes(hash) ? hash : "inicio");
+    };
+
+    window.addEventListener("hashchange", manejarCambioHash);
+
+    return () => {
+      window.removeEventListener("hashchange", manejarCambioHash);
+    };
+  }, []);
+
+  useEffect(() => {
+    const controlarScroll = () => {
+      setMostrarSubir(window.scrollY > 500);
+    };
+
+    window.addEventListener("scroll", controlarScroll);
+
+    return () => {
+      window.removeEventListener("scroll", controlarScroll);
+    };
+  }, []);
+
+  /* ========================================
+     UTILIDADES
+  ======================================== */
+
+  const volverArriba = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
   const formatearFecha = (fecha) => {
     if (!fecha) return "";
 
@@ -1915,101 +2072,85 @@ const guardarMomentoGaleria = async () => {
     return `${dia}/${mes}/${anio}`;
   };
 
-   return (
-  <main className="pagina">
-    <section
-      className={`hero ${seccionActiva !== "inicio" ? "hero-solo-menu" : ""}`}
-      id="inicio"
-    >
-      <header className="barra-superior">
-        <div className="marca">
-          <img src={logoListaVerde} alt="Logo Lista Verde" />
-          <span>LISTA VERDE</span>
-        </div>
+  return (
+    <main className="pagina">
+      <section
+        className={`hero ${seccionActiva !== "inicio" ? "hero-solo-menu" : ""}`}
+        id="inicio"
+      >
+        <header className="barra-superior">
+          <div className="marca">
+            <img src={logoListaVerde} alt="Logo Lista Verde" />
+            <span>LISTA VERDE</span>
+          </div>
 
-        <button
-          type="button"
-          className="menu-hamburguesa"
-          onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
-          aria-label="Abrir menú"
-        >
-          {menuMovilAbierto ? "✕" : "☰"}
-        </button>
-
-        <nav className={`menu ${menuMovilAbierto ? "menu-abierto" : ""}`}>
-          <a
-            href="#inicio"
-            className={seccionActiva === "inicio" ? "menu-activo" : ""}
-            onClick={() => {
-              setSeccionActiva("inicio");
-              setMenuMovilAbierto(false);
-            }}
+          <button
+            type="button"
+            className="menu-hamburguesa"
+            onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
+            aria-label="Abrir menú"
           >
-            Inicio
-          </a>
+            {menuMovilAbierto ? "✕" : "☰"}
+          </button>
 
-          <a
-            href="#quienes-somos"
-            className={
-              seccionActiva === "quienes-somos" ? "menu-activo" : ""
-            }
-            onClick={() => {
-              setSeccionActiva("quienes-somos");
-              setMenuMovilAbierto(false);
-            }}
-          >
-            Quiénes somos
-          </a>
+          <nav className={`menu ${menuMovilAbierto ? "menu-abierto" : ""}`}>
+            <a
+              href="#inicio"
+              className={seccionActiva === "inicio" ? "menu-activo" : ""}
+              onClick={() => {
+                setSeccionActiva("inicio");
+                setMenuMovilAbierto(false);
+              }}
+            >
+              Inicio
+            </a>
 
-          <a
-            href="#comunicados"
-            className={seccionActiva === "comunicados" ? "menu-activo" : ""}
-            onClick={() => {
-              setSeccionActiva("comunicados");
-              setMenuMovilAbierto(false);
-            }}
-          >
-            Comunicados
-          </a>
+            <a
+              href="#quienes-somos"
+              className={seccionActiva === "quienes-somos" ? "menu-activo" : ""}
+              onClick={() => {
+                setSeccionActiva("quienes-somos");
+                setMenuMovilAbierto(false);
+              }}
+            >
+              Quiénes somos
+            </a>
 
-          <a
-            href="#transparencia"
-            className={seccionActiva === "transparencia" ? "menu-activo" : ""}
-            onClick={() => {
-              setSeccionActiva("transparencia");
-              setMenuMovilAbierto(false);
-            }}
-          >
-            Transparencia
-          </a>
+            <a
+              href="#comunicados"
+              className={seccionActiva === "comunicados" ? "menu-activo" : ""}
+              onClick={() => {
+                setSeccionActiva("comunicados");
+                setMenuMovilAbierto(false);
+              }}
+            >
+              Comunicados
+            </a>
 
-          <a
-            href="#participa"
-            className={seccionActiva === "participa" ? "menu-activo" : ""}
-            onClick={() => {
-              setSeccionActiva("participa");
-              setMenuMovilAbierto(false);
-            }}
-          >
-            Participá
-          </a>
+            <a
+              href="#transparencia"
+              className={seccionActiva === "transparencia" ? "menu-activo" : ""}
+              onClick={() => {
+                setSeccionActiva("transparencia");
+                setMenuMovilAbierto(false);
+              }}
+            >
+              Transparencia
+            </a>
 
-          <div
-            className={`menu-mas ${
-              [
-                "derechos",
-                "proyectos",
-                "estatuto",
-                "manual",
-                "galeria",
-              ].includes(seccionActiva)
-                ? "menu-mas-activo"
-                : ""
-            }`}
-          >
-            <button
-              type="button"
-              className={`menu-mas-boton ${
+            <a
+              href="#participa"
+              className={seccionActiva === "participa" ? "menu-activo" : ""}
+              onClick={() => {
+                setSeccionActiva("participa");
+                setMenuMovilAbierto(false);
+              }}
+            >
+              Participá
+            </a>
+
+            <div
+              className={`menu-mas ${
                 [
                   "derechos",
                   "proyectos",
@@ -2017,132 +2158,154 @@ const guardarMomentoGaleria = async () => {
                   "manual",
                   "galeria",
                 ].includes(seccionActiva)
-                  ? "menu-activo"
+                  ? "menu-mas-activo"
                   : ""
               }`}
             >
-              <span>Más</span>
-              <span className="menu-mas-flecha">⌄</span>
-            </button>
-
-            <div className="submenu submenu-setlist">
-              <div className="submenu-encabezado">
-                <span>MÁS PARA EXPLORAR</span>
-                <small>SETLIST · LISTA VERDE</small>
-              </div>
-
-              <a
-                href="#derechos"
-                className={seccionActiva === "derechos" ? "submenu-activo" : ""}
-                onClick={() => {
-                  setSeccionActiva("derechos");
-                  setMenuMovilAbierto(false);
-                }}
+              <button
+                type="button"
+                className={`menu-mas-boton ${
+                  [
+                    "derechos",
+                    "proyectos",
+                    "estatuto",
+                    "manual",
+                    "galeria",
+                  ].includes(seccionActiva)
+                    ? "menu-activo"
+                    : ""
+                }`}
               >
-                <span className="submenu-numero">01</span>
+                <span>Más</span>
+                <span className="menu-mas-flecha">⌄</span>
+              </button>
 
-                <span className="submenu-texto">
-                  <strong>Derechos</strong>
-                  <small>Conocé tus derechos como estudiante</small>
-                </span>
+              <div className="submenu submenu-setlist">
+                <div className="submenu-encabezado">
+                  <span>MÁS PARA EXPLORAR</span>
+                  <small>SETLIST · LISTA VERDE</small>
+                </div>
 
-                <span className="submenu-flecha">→</span>
-              </a>
+                <a
+                  href="#derechos"
+                  className={
+                    seccionActiva === "derechos" ? "submenu-activo" : ""
+                  }
+                  onClick={() => {
+                    setSeccionActiva("derechos");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
+                  <span className="submenu-numero">01</span>
 
-              <a
-                href="#proyectos"
-                className={seccionActiva === "proyectos" ? "submenu-activo" : ""}
-                onClick={() => {
-                  setSeccionActiva("proyectos");
-                  setMenuMovilAbierto(false);
-                }}
-              >
-                <span className="submenu-numero">02</span>
+                  <span className="submenu-texto">
+                    <strong>Derechos</strong>
+                    <small>Conocé tus derechos como estudiante</small>
+                  </span>
 
-                <span className="submenu-texto">
-                  <strong>Proyectos</strong>
-                  <small>Ideas que se convierten en acción</small>
-                </span>
+                  <span className="submenu-flecha">→</span>
+                </a>
 
-                <span className="submenu-flecha">→</span>
-              </a>
+                <a
+                  href="#proyectos"
+                  className={
+                    seccionActiva === "proyectos" ? "submenu-activo" : ""
+                  }
+                  onClick={() => {
+                    setSeccionActiva("proyectos");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
+                  <span className="submenu-numero">02</span>
 
-              <a
-                href="#estatuto"
-                className={seccionActiva === "estatuto" ? "submenu-activo" : ""}
-                onClick={() => {
-                  setSeccionActiva("estatuto");
-                  setMenuMovilAbierto(false);
-                }}
-              >
-                <span className="submenu-numero">03</span>
+                  <span className="submenu-texto">
+                    <strong>Proyectos</strong>
+                    <small>Ideas que se convierten en acción</small>
+                  </span>
 
-                <span className="submenu-texto">
-                  <strong>Estatuto</strong>
-                  <small>Nuestras reglas y organización</small>
-                </span>
+                  <span className="submenu-flecha">→</span>
+                </a>
 
-                <span className="submenu-flecha">→</span>
-              </a>
+                <a
+                  href="#estatuto"
+                  className={
+                    seccionActiva === "estatuto" ? "submenu-activo" : ""
+                  }
+                  onClick={() => {
+                    setSeccionActiva("estatuto");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
+                  <span className="submenu-numero">03</span>
 
-              <a
-                href="#manual"
-                className={seccionActiva === "manual" ? "submenu-activo" : ""}
-                onClick={() => {
-                  setSeccionActiva("manual");
-                  setMenuMovilAbierto(false);
-                }}
-              >
-                <span className="submenu-numero">04</span>
+                  <span className="submenu-texto">
+                    <strong>Estatuto</strong>
+                    <small>Nuestras reglas y organización</small>
+                  </span>
 
-                <span className="submenu-texto">
-                  <strong>Manual Digital</strong>
-                  <small>Una guía hecha por estudiantes</small>
-                </span>
+                  <span className="submenu-flecha">→</span>
+                </a>
 
-                <span className="submenu-flecha">→</span>
-              </a>
+                <a
+                  href="#manual"
+                  className={seccionActiva === "manual" ? "submenu-activo" : ""}
+                  onClick={() => {
+                    setSeccionActiva("manual");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
+                  <span className="submenu-numero">04</span>
 
-              <a
-                href="#galeria"
-                className={seccionActiva === "galeria" ? "submenu-activo" : ""}
-                onClick={() => {
-                  setSeccionActiva("galeria");
-                  setMenuMovilAbierto(false);
-                }}
-              >
-                <span className="submenu-numero">05</span>
+                  <span className="submenu-texto">
+                    <strong>Manual Digital</strong>
+                    <small>Una guía hecha por estudiantes</small>
+                  </span>
 
-                <span className="submenu-texto">
-                  <strong>Galería</strong>
-                  <small>Momentos que construyen historia</small>
-                </span>
+                  <span className="submenu-flecha">→</span>
+                </a>
 
-                <span className="submenu-flecha">→</span>
-              </a>
+                <a
+                  href="#galeria"
+                  className={
+                    seccionActiva === "galeria" ? "submenu-activo" : ""
+                  }
+                  onClick={() => {
+                    setSeccionActiva("galeria");
+                    setMenuMovilAbierto(false);
+                  }}
+                >
+                  <span className="submenu-numero">05</span>
 
-              <div className="submenu-pie">
-                <span>♫</span>
-                <span>hecho por y para estudiantes</span>
+                  <span className="submenu-texto">
+                    <strong>Galería</strong>
+                    <small>Momentos que construyen historia</small>
+                  </span>
+
+                  <span className="submenu-flecha">→</span>
+                </a>
+
+                <div className="submenu-pie">
+                  <span>♫</span>
+                  <span>hecho por y para estudiantes</span>
+                </div>
               </div>
             </div>
-          </div>
-        </nav>
+          </nav>
 
-        <a
-          href="#gestion"
-          className={`boton-gestion ${
-            seccionActiva === "gestion" ? "boton-gestion-activo" : ""
-          }`}
-          onClick={() => {
-            setSeccionActiva("gestion");
-            setMenuMovilAbierto(false);
-          }}
-        >
-          🔒 Gestión 
-        </a>
-      </header>
-      
+          <a
+            href="#gestion"
+            className={`boton-gestion ${
+              seccionActiva === "gestion" ? "boton-gestion-activo" : ""
+            }`}
+            onClick={() => {
+              setSeccionActiva("gestion");
+              setMenuMovilAbierto(false);
+            }}
+          >
+            🔒 Gestión
+          </a>
+        </header>
+
         {seccionActiva === "inicio" && (
           <>
             <div className="forma forma-1"></div>
@@ -2589,50 +2752,89 @@ const guardarMomentoGaleria = async () => {
           </div>
 
           <div className="proyectos-grid">
-            <article className="proyecto-card">
-              <div className="proyecto-estado estado-en-marcha">
-                🟡 EN MARCHA
-              </div>
+            {proyectos.length === 0 ? (
+              <article className="proyecto-card proyecto-vacio">
+                <span className="proyecto-mas">＋</span>
 
-              <h3>Manual Digital del Estudiante</h3>
+                <h3>Próximamente</h3>
 
-              <p>
-                Un espacio pensado donde accedés a un manual para armar/desarmar
-                cada instrumento y equipo de sonido
-              </p>
+                <p>
+                  Los proyectos publicados por el Centro de Estudiantes van a
+                  aparecer acá.
+                </p>
+              </article>
+            ) : (
+              proyectos.map((proyecto) => {
+                const estadosProyecto = {
+                  idea: {
+                    texto: "💭 IDEA",
+                    clase: "estado-idea",
+                  },
+                  planificando: {
+                    texto: "📝 PLANIFICANDO",
+                    clase: "estado-planificando",
+                  },
+                  "en-marcha": {
+                    texto: "🚀 EN MARCHA",
+                    clase: "estado-en-marcha",
+                  },
+                  "casi-listo": {
+                    texto: "🎯 CASI LISTO",
+                    clase: "estado-casi-listo",
+                  },
+                  logrado: {
+                    texto: "🎉 LO HICIMOS",
+                    clase: "estado-logrado",
+                  },
+                };
 
-              <div className="proyecto-pie">
-                <span>Responsable</span>
-                <strong>Ashley Tortorello</strong>
-              </div>
-            </article>
+                const estadoActual =
+                  estadosProyecto[proyecto.estado] || estadosProyecto.idea;
 
-            <article className="proyecto-card">
-              <div className="proyecto-estado estado-idea">💡 IDEA</div>
+                return (
+                  <article
+                    key={proyecto._id}
+                    className={`proyecto-card ${
+                      proyecto.estado === "logrado" ? "proyecto-logrado" : ""
+                    }`}
+                  >
+                    <div className={`proyecto-estado ${estadoActual.clase}`}>
+                      {estadoActual.texto}
+                    </div>
 
-              <h3>Nuevas propuestas estudiantiles</h3>
+                    {proyecto.categoria && (
+                      <span className="proyecto-categoria">
+                        {proyecto.categoria}
+                      </span>
+                    )}
 
-              <p>
-                Las ideas que surjan de estudiantes y cursos podrán convertirse
-                en nuevos proyectos del Centro.
-              </p>
+                    <h3>{proyecto.titulo}</h3>
 
-              <div className="proyecto-pie">
-                <span>Participación</span>
-                <strong>Abierta a toda la escuela</strong>
-              </div>
-            </article>
+                    <p>{proyecto.descripcion}</p>
 
-            <article className="proyecto-card proyecto-vacio">
-              <span className="proyecto-mas">＋</span>
+                    {proyecto.proximoPaso && proyecto.estado !== "logrado" && (
+                      <div className="proyecto-proximo-paso">
+                        <span>PRÓXIMO PASO</span>
+                        <strong>{proyecto.proximoPaso}</strong>
+                      </div>
+                    )}
 
-              <h3>Próximo proyecto</h3>
+                    {proyecto.responsable && (
+                      <div className="proyecto-pie">
+                        <span>Responsable</span>
+                        <strong>{proyecto.responsable}</strong>
+                      </div>
+                    )}
 
-              <p>
-                Este espacio se irá completando con las nuevas iniciativas del
-                Centro de Estudiantes.
-              </p>
-            </article>
+                    {proyecto.estado === "logrado" && (
+                      <div className="proyecto-logrado-mensaje">
+                        LO HICIMOS 💚
+                      </div>
+                    )}
+                  </article>
+                );
+              })
+            )}
           </div>
 
           <div className="proyectos-frase">
@@ -3191,7 +3393,7 @@ const guardarMomentoGaleria = async () => {
                             setIndiceMedioGaleria(0);
                           }}
                         >
-                          ABRIR  para ver galería COMPLETA→
+                          ABRIR para ver galería COMPLETA→
                         </button>
                       )}
                     </div>
@@ -3464,7 +3666,12 @@ const guardarMomentoGaleria = async () => {
                       </p>
                     </div>
 
-                    <button type="button">Administrar →</button>
+                    <button
+                      type="button"
+                      onClick={() => setModuloGestionActivo("proyectos")}
+                    >
+                      Administrar →
+                    </button>
                   </article>
 
                   <article className="gestion-card">
@@ -3823,6 +4030,141 @@ const guardarMomentoGaleria = async () => {
                           </article>
                         ))}
                       </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {moduloGestionActivo === "proyectos" && (
+                <section className="gestion-modulo">
+                  <button
+                    type="button"
+                    className="boton-volver-gestion"
+                    onClick={() => setModuloGestionActivo(null)}
+                  >
+                    ← Volver al panel
+                  </button>
+
+                  <div className="gestion-modulo-encabezado">
+                    <span className="mini-titulo">PROYECTOS</span>
+
+                    <h2>Ideas que se convierten en acción 💡</h2>
+
+                    <p>
+                      Desde acá pueden crear proyectos, organizar sus avances y
+                      compartir con la escuela cómo va creciendo cada propuesta.
+                    </p>
+                  </div>
+
+                  <div className="gestion-formulario" id="formulario-proyecto">
+                    <h3>
+                      {proyectoEditando ? "Editar proyecto" : "Nuevo proyecto"}
+                    </h3>
+
+                    <label>
+                      Título
+                      <input
+                        type="text"
+                        placeholder="Ej.: Festival de bandas de la escuela"
+                        value={nuevoProyecto.titulo}
+                        onChange={(e) =>
+                          setNuevoProyecto({
+                            ...nuevoProyecto,
+                            titulo: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Descripción
+                      <textarea
+                        rows="4"
+                        placeholder="Contá de qué se trata la propuesta..."
+                        value={nuevoProyecto.descripcion}
+                        onChange={(e) =>
+                          setNuevoProyecto({
+                            ...nuevoProyecto,
+                            descripcion: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+
+                    <div className="gestion-transparencia-fila">
+                      <label>
+                        Categoría
+                        <select
+                          value={nuevoProyecto.categoria}
+                          onChange={(e) =>
+                            setNuevoProyecto({
+                              ...nuevoProyecto,
+                              categoria: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="Música">🎵 Música</option>
+                          <option value="Arte y cultura">
+                            🎨 Arte y cultura
+                          </option>
+                          <option value="Ambiente">🌱 Ambiente</option>
+                          <option value="Comunidad">🤝 Comunidad</option>
+                          <option value="Vida escolar">🎓 Vida escolar</option>
+                          <option value="Recreación">⚽ Recreación</option>
+                          <option value="Otra">💡 Otra</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        Fecha de inicio
+                        <input
+                          type="date"
+                          max={hoy}
+                          value={nuevoProyecto.fechaInicio}
+                          onChange={(e) =>
+                            setNuevoProyecto({
+                              ...nuevoProyecto,
+                              fechaInicio: e.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <label>
+                      Responsable
+                      <input
+                        type="text"
+                        placeholder="Ej.: Ashley Tortorello"
+                        value={nuevoProyecto.responsable}
+                        onChange={(e) =>
+                          setNuevoProyecto({
+                            ...nuevoProyecto,
+                            responsable: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="gestion-galeria-boton-cancelar"
+                      onClick={limpiarFormularioProyecto}
+                    >
+                      Limpiar formulario
+                    </button>
+                  </div>
+
+                  <div className="gestion-galeria-historial">
+                    <h3>Proyectos cargados</h3>
+
+                    {proyectosGestion.length === 0 ? (
+                      <p>No hay proyectos cargados todavía.</p>
+                    ) : (
+                      <p>
+                        Hay {proyectosGestion.length} proyecto
+                        {proyectosGestion.length === 1 ? "" : "s"} cargado
+                        {proyectosGestion.length === 1 ? "" : "s"}.
+                      </p>
                     )}
                   </div>
                 </section>

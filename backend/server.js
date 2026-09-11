@@ -17,6 +17,7 @@ const participacionesRoutes =
 const comunicadosRoutes = require("./routes/comunicados");  
 const transparenciaRoutes = require("./routes/transparencia");
 const galeriaRoutes = require("./routes/galeria");
+const proyectosRoutes = require("./routes/proyectos");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -34,7 +35,7 @@ app.use("/api/transparencia", transparenciaRoutes);
 
 app.use("/api/galeria", galeriaRoutes); 
 
-
+app.use("/api/proyectos", proyectosRoutes);
 
 // ========================================
 // FRONTEND REACT
