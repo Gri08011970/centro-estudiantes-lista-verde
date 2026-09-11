@@ -3191,7 +3191,7 @@ const guardarMomentoGaleria = async () => {
                             setIndiceMedioGaleria(0);
                           }}
                         >
-                          Abrir momento →
+                          ABRIR  para ver galería COMPLETA→
                         </button>
                       )}
                     </div>
