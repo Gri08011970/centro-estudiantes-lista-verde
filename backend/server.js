@@ -7,6 +7,7 @@ const dotenv = require("dotenv");
 const path = require("path");
 
 
+
 dotenv.config();
 
 const movimientosRoutes = require("./routes/movimientos");
@@ -31,7 +32,9 @@ app.use("/api/comunicados", comunicadosRoutes);
 
 app.use("/api/transparencia", transparenciaRoutes);
 
-app.use("/api/galeria", galeriaRoutes);
+app.use("/api/galeria", galeriaRoutes); 
+
+
 
 // ========================================
 // FRONTEND REACT

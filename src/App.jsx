@@ -45,6 +45,10 @@ function App() {
   const [galeriaGestion, setGaleriaGestion] = useState([]);
   const [galeriaPublica, setGaleriaPublica] = useState([]);
   const [momentoGaleriaEditando, setMomentoGaleriaEditando] = useState(null);
+  const [archivosGaleria, setArchivosGaleria] = useState([]);
+  const [mediosGaleriaEditando, setMediosGaleriaEditando] = useState([]);
+  const [momentoGaleriaAbierto, setMomentoGaleriaAbierto] = useState(null);
+  const [indiceMedioGaleria, setIndiceMedioGaleria] = useState(0);
 
   const [historialRendicionesAbierto, setHistorialRendicionesAbierto] =
     useState(false);
@@ -1528,6 +1532,7 @@ function App() {
 
   const editarMomentoGaleria = (momento) => {
     setMomentoGaleriaEditando(momento._id);
+    setMediosGaleriaEditando(momento.medios || []);
 
     setFormGaleria({
       fecha: momento.fecha,
@@ -1545,81 +1550,203 @@ function App() {
     }, 0);
   };
 
-  const guardarMomentoGaleria = async () => {
-    if (!formGaleria.fecha || !formGaleria.titulo.trim()) {
-      alert("Completá la fecha y el título del momento.");
-      return;
+const guardarMomentoGaleria = async () => {
+  if (!formGaleria.fecha || !formGaleria.titulo.trim()) {
+    alert("Completá la fecha y el título del momento.");
+    return;
+  }
+
+  const token = sessionStorage.getItem("gestionToken");
+
+  const apiGaleria =
+    window.location.hostname === "localhost"
+      ? "http://localhost:5000/api/galeria"
+      : "/api/galeria";
+
+  let mediosSubidosEnEsteIntento = [];
+  let guardadoEnMongo = false;
+
+  try {
+    const momentoOriginal = momentoGaleriaEditando
+      ? galeriaGestion.find(
+          (momento) => momento._id === momentoGaleriaEditando,
+        )
+      : null;
+
+    const mediosOriginales = momentoOriginal?.medios || [];
+
+    let medios = momentoGaleriaEditando
+      ? [...mediosGaleriaEditando]
+      : [];
+
+    if (archivosGaleria.length > 0) {
+      const mediosNuevos = [];
+
+      for (const archivo of archivosGaleria) {
+        const formData = new FormData();
+        formData.append("archivo", archivo);
+
+        const respuestaUpload = await fetch(`${apiGaleria}/upload`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        const datosUpload = await respuestaUpload.json();
+
+        if (!respuestaUpload.ok) {
+          throw new Error(
+            datosUpload.mensaje || "No se pudo subir uno de los archivos.",
+          );
+        }
+
+        mediosNuevos.push(datosUpload);
+        mediosSubidosEnEsteIntento.push(datosUpload);
+      }
+
+      medios = [...medios, ...mediosNuevos];
     }
 
-    try {
-      const token = sessionStorage.getItem("gestionToken");
+    const url = momentoGaleriaEditando
+      ? `${apiGaleria}/${momentoGaleriaEditando}`
+      : apiGaleria;
 
-      const apiGaleria =
-        window.location.hostname === "localhost"
-          ? "http://localhost:5000/api/galeria"
-          : "/api/galeria";
+    const respuesta = await fetch(url, {
+      method: momentoGaleriaEditando ? "PUT" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fecha: formGaleria.fecha,
+        titulo: formGaleria.titulo,
+        descripcion: formGaleria.descripcion,
+        categoria: formGaleria.categoria,
+        medios,
+        publicado: formGaleria.publicado,
+      }),
+    });
 
-      const url = momentoGaleriaEditando
-        ? `${apiGaleria}/${momentoGaleriaEditando}`
-        : apiGaleria;
+    const datos = await respuesta.json();
 
-      const respuesta = await fetch(url, {
-        method: momentoGaleriaEditando ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          fecha: formGaleria.fecha,
-          titulo: formGaleria.titulo,
-          descripcion: formGaleria.descripcion,
-          categoria: formGaleria.categoria,
-          medios: [],
-          publicado: formGaleria.publicado,
-        }),
-      });
-
-      const datos = await respuesta.json();
-
-      if (!respuesta.ok) {
-        throw new Error(
-          datos.mensaje ||
-            (momentoGaleriaEditando
-              ? "No se pudo actualizar el momento."
-              : "No se pudo guardar el momento."),
-        );
-      }
-
-      if (momentoGaleriaEditando) {
-        setGaleriaGestion((anteriores) =>
-          anteriores.map((momento) =>
-            momento._id === datos._id ? datos : momento,
-          ),
-        );
-      } else {
-        setGaleriaGestion((anteriores) => [datos, ...anteriores]);
-      }
-
-      setFormGaleria({
-        fecha: "",
-        categoria: "Actividad",
-        titulo: "",
-        descripcion: "",
-        publicado: false,
-      });
-
-      setMomentoGaleriaEditando(null);
-
-      alert(
-        momentoGaleriaEditando
-          ? "Momento actualizado correctamente."
-          : "Momento guardado correctamente.",
+    if (!respuesta.ok) {
+      throw new Error(
+        datos.mensaje ||
+          (momentoGaleriaEditando
+            ? "No se pudo actualizar el momento."
+            : "No se pudo guardar el momento."),
       );
-    } catch (error) {
-      console.error("Error al guardar momento de galería:", error);
-      alert(error.message);
     }
-  };
+
+    guardadoEnMongo = true;
+
+    if (momentoGaleriaEditando) {
+      const mediosEliminados = mediosOriginales.filter(
+        (medioOriginal) =>
+          !medios.some(
+            (medioActual) =>
+              medioActual.publicId === medioOriginal.publicId,
+          ),
+      );
+
+      for (const medioEliminado of mediosEliminados) {
+        const respuestaEliminar = await fetch(`${apiGaleria}/media`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            publicId: medioEliminado.publicId,
+            tipo: medioEliminado.tipo,
+          }),
+        });
+
+        const datosEliminar = await respuestaEliminar.json();
+
+        if (!respuestaEliminar.ok) {
+          console.error(
+            "No se pudo eliminar un archivo de Cloudinary:",
+            datosEliminar,
+          );
+        }
+      }
+
+      setGaleriaGestion((anteriores) =>
+        anteriores.map((momento) =>
+          momento._id === datos._id ? datos : momento,
+        ),
+      );
+    } else {
+      setGaleriaGestion((anteriores) => [datos, ...anteriores]);
+    }
+
+    setFormGaleria({
+      fecha: "",
+      categoria: "Actividad",
+      titulo: "",
+      descripcion: "",
+      publicado: false,
+    });
+
+    setArchivosGaleria([]);
+    setMomentoGaleriaEditando(null);
+    setMediosGaleriaEditando([]);
+
+    alert(
+      momentoGaleriaEditando
+        ? "Momento actualizado correctamente."
+        : "Momento guardado correctamente.",
+    );
+  } catch (error) {
+    console.error("Error al guardar momento de galería:", error);
+
+    if (!guardadoEnMongo && mediosSubidosEnEsteIntento.length > 0) {
+      console.warn(
+        "El guardado falló. Limpiando archivos recién subidos a Cloudinary...",
+      );
+
+      const resultadosRollback = await Promise.allSettled(
+        mediosSubidosEnEsteIntento
+          .filter((medio) => medio.publicId)
+          .map(async (medio) => {
+            const respuestaRollback = await fetch(`${apiGaleria}/media`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                publicId: medio.publicId,
+                tipo: medio.tipo,
+              }),
+            });
+
+            if (!respuestaRollback.ok) {
+              throw new Error(
+                `No se pudo limpiar ${medio.publicId} de Cloudinary.`,
+              );
+            }
+          }),
+      );
+
+      const rollbackFallidos = resultadosRollback.filter(
+        (resultado) => resultado.status === "rejected",
+      );
+
+      if (rollbackFallidos.length > 0) {
+        console.error(
+          "Algunos archivos no pudieron limpiarse durante el rollback:",
+          rollbackFallidos,
+        );
+      }
+    }
+
+    alert(error.message);
+  }
+};
 
   const cambiarPublicacionMomentoGaleria = async (momento) => {
     try {
@@ -1667,45 +1794,45 @@ function App() {
   };
 
   const eliminarMomentoGaleria = async (id) => {
-    const confirmar = window.confirm(
-      "¿Seguro que querés eliminar este momento de la galería?",
+  const confirmar = window.confirm(
+    "¿Seguro que querés eliminar este momento de la galería? También se eliminarán sus fotos y videos.",
+  );
+
+  if (!confirmar) {
+    return;
+  }
+
+  try {
+    const token = sessionStorage.getItem("gestionToken");
+
+    const apiGaleria =
+      window.location.hostname === "localhost"
+        ? "http://localhost:5000/api/galeria"
+        : "/api/galeria";
+
+    const respuesta = await fetch(`${apiGaleria}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok) {
+      throw new Error(datos.mensaje || "No se pudo eliminar el momento.");
+    }
+
+    setGaleriaGestion((anteriores) =>
+      anteriores.filter((momento) => momento._id !== id),
     );
 
-    if (!confirmar) {
-      return;
-    }
-
-    try {
-      const token = sessionStorage.getItem("gestionToken");
-
-      const apiGaleria =
-        window.location.hostname === "localhost"
-          ? "http://localhost:5000/api/galeria"
-          : "/api/galeria";
-
-      const respuesta = await fetch(`${apiGaleria}/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const datos = await respuesta.json();
-
-      if (!respuesta.ok) {
-        throw new Error(datos.mensaje || "No se pudo eliminar el momento.");
-      }
-
-      setGaleriaGestion((anteriores) =>
-        anteriores.filter((momento) => momento._id !== id),
-      );
-
-      alert("Momento eliminado correctamente.");
-    } catch (error) {
-      console.error("Error al eliminar momento de galería:", error);
-      alert(error.message);
-    }
-  };
+    alert(datos.mensaje || "Momento eliminado correctamente.");
+  } catch (error) {
+    console.error("Error al eliminar momento de galería:", error);
+    alert(error.message);
+  }
+};
 
   const guardarColaboracion = async () => {
     if (
@@ -1788,196 +1915,234 @@ function App() {
     return `${dia}/${mes}/${anio}`;
   };
 
-  return (
-    <main className="pagina">
-      <section
-        className={`hero ${seccionActiva !== "inicio" ? "hero-solo-menu" : ""}`}
-        id="inicio"
-      >
-        <header className="barra-superior">
-          <div className="marca">
-            <img src={logoListaVerde} alt="Logo Lista Verde" />
-            <span>LISTA VERDE</span>
-          </div>
+   return (
+  <main className="pagina">
+    <section
+      className={`hero ${seccionActiva !== "inicio" ? "hero-solo-menu" : ""}`}
+      id="inicio"
+    >
+      <header className="barra-superior">
+        <div className="marca">
+          <img src={logoListaVerde} alt="Logo Lista Verde" />
+          <span>LISTA VERDE</span>
+        </div>
 
-          <button
-            type="button"
-            className="menu-hamburguesa"
-            onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
-            aria-label="Abrir menú"
-          >
-            {menuMovilAbierto ? "✕" : "☰"}
-          </button>
+        <button
+          type="button"
+          className="menu-hamburguesa"
+          onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
+          aria-label="Abrir menú"
+        >
+          {menuMovilAbierto ? "✕" : "☰"}
+        </button>
 
-          <nav className={`menu ${menuMovilAbierto ? "menu-abierto" : ""}`}>
-            <a
-              href="#inicio"
-              onClick={() => {
-                setSeccionActiva("inicio");
-                setMenuMovilAbierto(false);
-              }}
-            >
-              Inicio
-            </a>
-
-            <a
-              href="#quienes-somos"
-              onClick={() => {
-                setSeccionActiva("quienes-somos");
-                setMenuMovilAbierto(false);
-              }}
-            >
-              Quiénes somos
-            </a>
-
-            <a
-              href="#comunicados"
-              onClick={() => {
-                setSeccionActiva("comunicados");
-                setMenuMovilAbierto(false);
-              }}
-            >
-              Comunicados
-            </a>
-
-            <a
-              href="#transparencia"
-              className={seccionActiva === "transparencia" ? "menu-activo" : ""}
-              onClick={() => {
-                setSeccionActiva("transparencia");
-                setMenuMovilAbierto(false);
-              }}
-            >
-              Transparencia
-            </a>
-
-            <a
-              href="#participa"
-              onClick={() => {
-                setSeccionActiva("participa");
-                setMenuMovilAbierto(false);
-              }}
-            >
-              Participá
-            </a>
-
-            <div className="menu-mas">
-              <button type="button" className="menu-mas-boton">
-                <span>Más</span>
-                <span className="menu-mas-flecha">⌄</span>
-              </button>
-
-              <div className="submenu submenu-setlist">
-                <div className="submenu-encabezado">
-                  <span>MÁS PARA EXPLORAR</span>
-                  <small>SETLIST · LISTA VERDE</small>
-                </div>
-
-                <a
-                  href="#derechos"
-                  onClick={() => {
-                    setSeccionActiva("derechos");
-                    setMenuMovilAbierto(false);
-                  }}
-                >
-                  <span className="submenu-numero">01</span>
-
-                  <span className="submenu-texto">
-                    <strong>Derechos</strong>
-                    <small>Conocé tus derechos como estudiante</small>
-                  </span>
-
-                  <span className="submenu-flecha">→</span>
-                </a>
-
-                <a
-                  href="#proyectos"
-                  onClick={() => {
-                    setSeccionActiva("proyectos");
-                    setMenuMovilAbierto(false);
-                  }}
-                >
-                  <span className="submenu-numero">02</span>
-
-                  <span className="submenu-texto">
-                    <strong>Proyectos</strong>
-                    <small>Ideas que se convierten en acción</small>
-                  </span>
-
-                  <span className="submenu-flecha">→</span>
-                </a>
-
-                <a
-                  href="#estatuto"
-                  onClick={() => {
-                    setSeccionActiva("estatuto");
-                    setMenuMovilAbierto(false);
-                  }}
-                >
-                  <span className="submenu-numero">03</span>
-
-                  <span className="submenu-texto">
-                    <strong>Estatuto</strong>
-                    <small>Nuestras reglas y organización</small>
-                  </span>
-
-                  <span className="submenu-flecha">→</span>
-                </a>
-
-                <a
-                  href="#manual"
-                  onClick={() => {
-                    setSeccionActiva("manual");
-                    setMenuMovilAbierto(false);
-                  }}
-                >
-                  <span className="submenu-numero">04</span>
-
-                  <span className="submenu-texto">
-                    <strong>Manual Digital</strong>
-                    <small>Una guía hecha por estudiantes</small>
-                  </span>
-
-                  <span className="submenu-flecha">→</span>
-                </a>
-
-                <a
-                  href="#galeria"
-                  onClick={() => {
-                    setSeccionActiva("galeria");
-                    setMenuMovilAbierto(false);
-                  }}
-                >
-                  <span className="submenu-numero">05</span>
-
-                  <span className="submenu-texto">
-                    <strong>Galería</strong>
-                    <small>Momentos que construyen historia</small>
-                  </span>
-
-                  <span className="submenu-flecha">→</span>
-                </a>
-
-                <div className="submenu-pie">
-                  <span>♫</span>
-                  <span>hecho por y para estudiantes</span>
-                </div>
-              </div>
-            </div>
-          </nav>
-
+        <nav className={`menu ${menuMovilAbierto ? "menu-abierto" : ""}`}>
           <a
-            href="#gestion"
-            className="boton-gestion"
+            href="#inicio"
+            className={seccionActiva === "inicio" ? "menu-activo" : ""}
             onClick={() => {
-              setSeccionActiva("gestion");
+              setSeccionActiva("inicio");
               setMenuMovilAbierto(false);
             }}
           >
-            🔒 Gestión
+            Inicio
           </a>
-        </header>
 
+          <a
+            href="#quienes-somos"
+            className={
+              seccionActiva === "quienes-somos" ? "menu-activo" : ""
+            }
+            onClick={() => {
+              setSeccionActiva("quienes-somos");
+              setMenuMovilAbierto(false);
+            }}
+          >
+            Quiénes somos
+          </a>
+
+          <a
+            href="#comunicados"
+            className={seccionActiva === "comunicados" ? "menu-activo" : ""}
+            onClick={() => {
+              setSeccionActiva("comunicados");
+              setMenuMovilAbierto(false);
+            }}
+          >
+            Comunicados
+          </a>
+
+          <a
+            href="#transparencia"
+            className={seccionActiva === "transparencia" ? "menu-activo" : ""}
+            onClick={() => {
+              setSeccionActiva("transparencia");
+              setMenuMovilAbierto(false);
+            }}
+          >
+            Transparencia
+          </a>
+
+          <a
+            href="#participa"
+            className={seccionActiva === "participa" ? "menu-activo" : ""}
+            onClick={() => {
+              setSeccionActiva("participa");
+              setMenuMovilAbierto(false);
+            }}
+          >
+            Participá
+          </a>
+
+          <div
+            className={`menu-mas ${
+              [
+                "derechos",
+                "proyectos",
+                "estatuto",
+                "manual",
+                "galeria",
+              ].includes(seccionActiva)
+                ? "menu-mas-activo"
+                : ""
+            }`}
+          >
+            <button
+              type="button"
+              className={`menu-mas-boton ${
+                [
+                  "derechos",
+                  "proyectos",
+                  "estatuto",
+                  "manual",
+                  "galeria",
+                ].includes(seccionActiva)
+                  ? "menu-activo"
+                  : ""
+              }`}
+            >
+              <span>Más</span>
+              <span className="menu-mas-flecha">⌄</span>
+            </button>
+
+            <div className="submenu submenu-setlist">
+              <div className="submenu-encabezado">
+                <span>MÁS PARA EXPLORAR</span>
+                <small>SETLIST · LISTA VERDE</small>
+              </div>
+
+              <a
+                href="#derechos"
+                className={seccionActiva === "derechos" ? "submenu-activo" : ""}
+                onClick={() => {
+                  setSeccionActiva("derechos");
+                  setMenuMovilAbierto(false);
+                }}
+              >
+                <span className="submenu-numero">01</span>
+
+                <span className="submenu-texto">
+                  <strong>Derechos</strong>
+                  <small>Conocé tus derechos como estudiante</small>
+                </span>
+
+                <span className="submenu-flecha">→</span>
+              </a>
+
+              <a
+                href="#proyectos"
+                className={seccionActiva === "proyectos" ? "submenu-activo" : ""}
+                onClick={() => {
+                  setSeccionActiva("proyectos");
+                  setMenuMovilAbierto(false);
+                }}
+              >
+                <span className="submenu-numero">02</span>
+
+                <span className="submenu-texto">
+                  <strong>Proyectos</strong>
+                  <small>Ideas que se convierten en acción</small>
+                </span>
+
+                <span className="submenu-flecha">→</span>
+              </a>
+
+              <a
+                href="#estatuto"
+                className={seccionActiva === "estatuto" ? "submenu-activo" : ""}
+                onClick={() => {
+                  setSeccionActiva("estatuto");
+                  setMenuMovilAbierto(false);
+                }}
+              >
+                <span className="submenu-numero">03</span>
+
+                <span className="submenu-texto">
+                  <strong>Estatuto</strong>
+                  <small>Nuestras reglas y organización</small>
+                </span>
+
+                <span className="submenu-flecha">→</span>
+              </a>
+
+              <a
+                href="#manual"
+                className={seccionActiva === "manual" ? "submenu-activo" : ""}
+                onClick={() => {
+                  setSeccionActiva("manual");
+                  setMenuMovilAbierto(false);
+                }}
+              >
+                <span className="submenu-numero">04</span>
+
+                <span className="submenu-texto">
+                  <strong>Manual Digital</strong>
+                  <small>Una guía hecha por estudiantes</small>
+                </span>
+
+                <span className="submenu-flecha">→</span>
+              </a>
+
+              <a
+                href="#galeria"
+                className={seccionActiva === "galeria" ? "submenu-activo" : ""}
+                onClick={() => {
+                  setSeccionActiva("galeria");
+                  setMenuMovilAbierto(false);
+                }}
+              >
+                <span className="submenu-numero">05</span>
+
+                <span className="submenu-texto">
+                  <strong>Galería</strong>
+                  <small>Momentos que construyen historia</small>
+                </span>
+
+                <span className="submenu-flecha">→</span>
+              </a>
+
+              <div className="submenu-pie">
+                <span>♫</span>
+                <span>hecho por y para estudiantes</span>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <a
+          href="#gestion"
+          className={`boton-gestion ${
+            seccionActiva === "gestion" ? "boton-gestion-activo" : ""
+          }`}
+          onClick={() => {
+            setSeccionActiva("gestion");
+            setMenuMovilAbierto(false);
+          }}
+        >
+          🔒 Gestión 
+        </a>
+      </header>
+      
         {seccionActiva === "inicio" && (
           <>
             <div className="forma forma-1"></div>
@@ -2963,11 +3128,42 @@ function App() {
                 const claseImagen = `galeria-imagen-${(index % 3) + 1}`;
 
                 return (
-                  <article key={momento._id} className="galeria-card">
+                  <article
+                    key={momento._id}
+                    className={`galeria-card ${
+                      momento.medios?.length > 1 ? "galeria-card-coleccion" : ""
+                    }`}
+                    onClick={() => {
+                      if (momento.medios?.length > 1) {
+                        setMomentoGaleriaAbierto(momento);
+                        setIndiceMedioGaleria(0);
+                      }
+                    }}
+                  >
                     <div className={`galeria-imagen ${claseImagen}`}>
-                      <span>
-                        {momento.categoria?.toUpperCase() || "ACTIVIDAD"}
-                      </span>
+                      {momento.medios?.length > 1 && (
+                        <span className="galeria-coleccion-indicador">
+                          📸 {momento.medios.length} recuerdos
+                        </span>
+                      )}
+                      {momento.medios?.[0]?.tipo === "imagen" ? (
+                        <img
+                          src={momento.medios[0].url}
+                          alt={momento.titulo}
+                          className="galeria-foto"
+                        />
+                      ) : momento.medios?.[0]?.tipo === "video" ? (
+                        <video
+                          src={momento.medios[0].url}
+                          className="galeria-video"
+                          controls
+                          preload="metadata"
+                        />
+                      ) : (
+                        <span>
+                          {momento.categoria?.toUpperCase() || "ACTIVIDAD"}
+                        </span>
+                      )}
                     </div>
 
                     <div className="galeria-contenido">
@@ -2984,12 +3180,106 @@ function App() {
                       <h3>{momento.titulo}</h3>
 
                       {momento.descripcion && <p>{momento.descripcion}</p>}
+
+                      {momento.medios?.length > 1 && (
+                        <button
+                          type="button"
+                          className="galeria-boton galeria-boton-coleccion"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMomentoGaleriaAbierto(momento);
+                            setIndiceMedioGaleria(0);
+                          }}
+                        >
+                          Abrir momento →
+                        </button>
+                      )}
                     </div>
                   </article>
                 );
               })
             )}
           </div>
+
+          {momentoGaleriaAbierto && (
+            <div className="galeria-modal">
+              <div className="galeria-modal-contenido">
+                <button
+                  type="button"
+                  className="galeria-modal-cerrar"
+                  onClick={() => {
+                    setMomentoGaleriaAbierto(null);
+                    setIndiceMedioGaleria(0);
+                  }}
+                >
+                  ×
+                </button>
+
+                <div className="galeria-modal-encabezado">
+                  <span>{momentoGaleriaAbierto.categoria}</span>
+                  <h3>{momentoGaleriaAbierto.titulo}</h3>
+
+                  {momentoGaleriaAbierto.descripcion && (
+                    <p>{momentoGaleriaAbierto.descripcion}</p>
+                  )}
+                </div>
+
+                <div className="galeria-visor">
+                  <div className="galeria-visor-principal">
+                    {momentoGaleriaAbierto.medios[indiceMedioGaleria]?.tipo ===
+                    "imagen" ? (
+                      <img
+                        src={
+                          momentoGaleriaAbierto.medios[indiceMedioGaleria].url
+                        }
+                        alt={momentoGaleriaAbierto.titulo}
+                      />
+                    ) : (
+                      <video
+                        key={
+                          momentoGaleriaAbierto.medios[indiceMedioGaleria].url
+                        }
+                        src={
+                          momentoGaleriaAbierto.medios[indiceMedioGaleria].url
+                        }
+                        controls
+                        preload="metadata"
+                      />
+                    )}
+                  </div>
+
+                  {momentoGaleriaAbierto.medios.length > 1 && (
+                    <div className="galeria-selector-medios">
+                      <p>Elegí qué querés ver</p>
+
+                      <div className="galeria-miniaturas">
+                        {momentoGaleriaAbierto.medios.map((medio, index) => (
+                          <button
+                            key={`${medio.publicId}-${index}`}
+                            type="button"
+                            className={`galeria-miniatura ${
+                              indiceMedioGaleria === index ? "activa" : ""
+                            }`}
+                            onClick={() => setIndiceMedioGaleria(index)}
+                          >
+                            {medio.tipo === "imagen" ? (
+                              <img src={medio.url} alt={`Vista ${index + 1}`} />
+                            ) : (
+                              <video src={medio.url} muted preload="metadata" />
+                            )}
+
+                            {medio.tipo === "video" && (
+                              <span className="galeria-miniatura-video">▶</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="galeria-destacado">
             <div>
@@ -3628,6 +3918,65 @@ function App() {
                       />
                     </label>
 
+                    <label>
+                      Fotos o videos
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        multiple
+                        onChange={(e) => {
+                          setArchivosGaleria(Array.from(e.target.files));
+                        }}
+                      />
+                    </label>
+
+                    {momentoGaleriaEditando &&
+                      mediosGaleriaEditando.length > 0 && (
+                        <div className="gestion-galeria-medios-existentes">
+                          <p>Archivos guardados en este momento</p>
+
+                          <div className="gestion-galeria-medios-grid">
+                            {mediosGaleriaEditando.map((medio, index) => (
+                              <div
+                                key={`${medio.publicId}-${index}`}
+                                className="gestion-galeria-medio"
+                              >
+                                {medio.tipo === "imagen" ? (
+                                  <img
+                                    src={medio.url}
+                                    alt={`Archivo ${index + 1}`}
+                                  />
+                                ) : (
+                                  <div className="gestion-galeria-video-preview">
+                                    <video
+                                      src={medio.url}
+                                      muted
+                                      preload="metadata"
+                                    />
+                                    <span>▶</span>
+                                  </div>
+                                )}
+
+                                <small>
+                                  {medio.tipo === "imagen" ? "Foto" : "Video"}
+                                </small>
+
+                                <button
+                                  type="button"
+                                  className="gestion-galeria-quitar-medio"
+                                  onClick={() => {
+                                    setMediosGaleriaEditando((anteriores) =>
+                                      anteriores.filter((_, i) => i !== index),
+                                    );
+                                  }}
+                                >
+                                  🗑️ Quitar
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     <label className="gestion-checkbox">
                       <input
                         type="checkbox"
@@ -3641,11 +3990,40 @@ function App() {
                       />
                       Publicar en la galería
                     </label>
-                    <button type="button" onClick={guardarMomentoGaleria}>
-                      {momentoGaleriaEditando
-                        ? "Guardar cambios"
-                        : "Guardar momento"}
-                    </button>
+                    <div className="gestion-galeria-botones-formulario">
+                      <button
+                        type="button"
+                        className="gestion-galeria-boton-guardar"
+                        onClick={guardarMomentoGaleria}
+                      >
+                        {momentoGaleriaEditando
+                          ? "Guardar cambios"
+                          : "Guardar momento"}
+                      </button>
+
+                      {momentoGaleriaEditando && (
+                        <button
+                          type="button"
+                          className="gestion-galeria-boton-cancelar"
+                          onClick={() => {
+                            setMomentoGaleriaEditando(null);
+
+                            setFormGaleria({
+                              fecha: "",
+                              categoria: "Actividad",
+                              titulo: "",
+                              descripcion: "",
+                              publicado: false,
+                            });
+
+                            setArchivosGaleria([]);
+                            setMediosGaleriaEditando([]);
+                          }}
+                        >
+                          Cancelar edición
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="gestion-galeria-historial">
                     <h3>Momentos cargados</h3>
