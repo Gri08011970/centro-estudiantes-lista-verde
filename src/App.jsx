@@ -686,6 +686,11 @@ function App() {
 
   const [proyectoEditando, setProyectoEditando] = useState(null);
 
+  const [nuevoAvanceProyecto, setNuevoAvanceProyecto] = useState({
+    fecha: "",
+    texto: "",
+  });
+
   const [nuevoProyecto, setNuevoProyecto] = useState({
     titulo: "",
     descripcion: "",
@@ -777,6 +782,258 @@ function App() {
     setProyectoEditando(null);
   };
 
+  const guardarProyecto = async () => {
+    if (!nuevoProyecto.titulo.trim() || !nuevoProyecto.descripcion.trim()) {
+      alert("Completá el título y la descripción del proyecto.");
+      return;
+    }
+
+    if (nuevoProyecto.fechaInicio && nuevoProyecto.fechaInicio > hoy) {
+      alert("La fecha de inicio no puede ser futura.");
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiProyectos =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/proyectos"
+          : "/api/proyectos";
+
+      const url = proyectoEditando
+        ? `${apiProyectos}/${proyectoEditando}`
+        : apiProyectos;
+
+      const respuesta = await fetch(url, {
+        method: proyectoEditando ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(nuevoProyecto),
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje ||
+            (proyectoEditando
+              ? "No se pudo actualizar el proyecto."
+              : "No se pudo guardar el proyecto."),
+        );
+      }
+
+      if (proyectoEditando) {
+        setProyectosGestion((anteriores) =>
+          anteriores.map((proyecto) =>
+            proyecto._id === datos._id ? datos : proyecto,
+          ),
+        );
+      } else {
+        setProyectosGestion((anteriores) => [datos, ...anteriores]);
+      }
+
+      setProyectos((anteriores) => {
+        if (!datos.publicado) {
+          return anteriores.filter((proyecto) => proyecto._id !== datos._id);
+        }
+
+        const yaExiste = anteriores.some(
+          (proyecto) => proyecto._id === datos._id,
+        );
+
+        if (yaExiste) {
+          return anteriores.map((proyecto) =>
+            proyecto._id === datos._id ? datos : proyecto,
+          );
+        }
+
+        return [datos, ...anteriores];
+      });
+
+      limpiarFormularioProyecto();
+
+      alert(
+        proyectoEditando
+          ? "Proyecto actualizado correctamente."
+          : "Proyecto guardado correctamente.",
+      );
+    } catch (error) {
+      console.error("Error al guardar proyecto:", error);
+      alert(error.message);
+    }
+  };
+
+  const editarProyecto = (proyecto) => {
+    setProyectoEditando(proyecto._id);
+
+    setNuevoProyecto({
+      titulo: proyecto.titulo,
+      descripcion: proyecto.descripcion,
+      categoria: proyecto.categoria || "Otra",
+      responsable: proyecto.responsable || "",
+      estado: proyecto.estado || "idea",
+      fechaInicio: proyecto.fechaInicio || "",
+      proximoPaso: proyecto.proximoPaso || "",
+      publicado: proyecto.publicado,
+      avances: proyecto.avances || [],
+    });
+
+    setTimeout(() => {
+      document.getElementById("formulario-proyecto")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
+
+  const cambiarPublicacionProyecto = async (proyecto) => {
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiProyectos =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/proyectos"
+          : "/api/proyectos";
+
+      const proyectoActualizado = {
+        titulo: proyecto.titulo,
+        descripcion: proyecto.descripcion,
+        categoria: proyecto.categoria,
+        responsable: proyecto.responsable,
+        estado: proyecto.estado,
+        fechaInicio: proyecto.fechaInicio,
+        proximoPaso: proyecto.proximoPaso,
+        publicado: !proyecto.publicado,
+        avances: proyecto.avances || [],
+      };
+
+      const respuesta = await fetch(`${apiProyectos}/${proyecto._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(proyectoActualizado),
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(
+          datos.mensaje || "No se pudo cambiar la publicación del proyecto.",
+        );
+      }
+
+      setProyectosGestion((anteriores) =>
+        anteriores.map((item) => (item._id === datos._id ? datos : item)),
+      );
+
+      setProyectos((anteriores) => {
+        if (!datos.publicado) {
+          return anteriores.filter((item) => item._id !== datos._id);
+        }
+
+        const yaExiste = anteriores.some((item) => item._id === datos._id);
+
+        if (yaExiste) {
+          return anteriores.map((item) =>
+            item._id === datos._id ? datos : item,
+          );
+        }
+
+        return [datos, ...anteriores];
+      });
+    } catch (error) {
+      console.error("Error al cambiar publicación del proyecto:", error);
+      alert(error.message);
+    }
+  };
+
+  const eliminarProyecto = async (id) => {
+    const confirmar = window.confirm(
+      "¿Querés eliminar este proyecto? Esta acción no se puede deshacer.",
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("gestionToken");
+
+      const apiProyectos =
+        window.location.hostname === "localhost"
+          ? "http://localhost:5000/api/proyectos"
+          : "/api/proyectos";
+
+      const respuesta = await fetch(`${apiProyectos}/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(datos.mensaje || "No se pudo eliminar el proyecto.");
+      }
+
+      setProyectosGestion((anteriores) =>
+        anteriores.filter((proyecto) => proyecto._id !== id),
+      );
+
+      setProyectos((anteriores) =>
+        anteriores.filter((proyecto) => proyecto._id !== id),
+      );
+
+      if (proyectoEditando === id) {
+        limpiarFormularioProyecto();
+      }
+
+      alert("Proyecto eliminado correctamente.");
+    } catch (error) {
+      console.error("Error al eliminar proyecto:", error);
+      alert(error.message);
+    }
+  };
+
+  const agregarAvanceProyecto = () => {
+    if (!nuevoAvanceProyecto.fecha || !nuevoAvanceProyecto.texto.trim()) {
+      alert("Completá la fecha y la descripción del avance.");
+      return;
+    }
+
+    if (nuevoAvanceProyecto.fecha > hoy) {
+      alert("La fecha del avance no puede ser futura.");
+      return;
+    }
+
+    const nuevoAvance = {
+      fecha: nuevoAvanceProyecto.fecha,
+      texto: nuevoAvanceProyecto.texto.trim(),
+    };
+
+    setNuevoProyecto((anterior) => ({
+      ...anterior,
+      avances: [...(anterior.avances || []), nuevoAvance],
+    }));
+
+    setNuevoAvanceProyecto({
+      fecha: "",
+      texto: "",
+    });
+  };
+
+  const eliminarAvanceProyecto = (indice) => {
+    setNuevoProyecto((anterior) => ({
+      ...anterior,
+      avances: anterior.avances.filter((_, index) => index !== indice),
+    }));
+  };
   /* ========================================
      MANUAL DIGITAL
   ======================================== */
@@ -4145,6 +4402,153 @@ function App() {
                         }
                       />
                     </label>
+
+                    <div className="gestion-transparencia-fila">
+                      <label>
+                        Estado del proyecto
+                        <select
+                          value={nuevoProyecto.estado}
+                          onChange={(e) =>
+                            setNuevoProyecto({
+                              ...nuevoProyecto,
+                              estado: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="idea">💭 Idea</option>
+                          <option value="planificando">📝 Planificando</option>
+                          <option value="en-marcha">🚀 En marcha</option>
+                          <option value="casi-listo">🎯 Casi listo</option>
+                          <option value="logrado">🎉 Logrado</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        Próximo paso
+                        <input
+                          type="text"
+                          placeholder="Ej.: Presentar la propuesta a Dirección"
+                          value={nuevoProyecto.proximoPaso}
+                          onChange={(e) =>
+                            setNuevoProyecto({
+                              ...nuevoProyecto,
+                              proximoPaso: e.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <label className="gestion-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={nuevoProyecto.publicado}
+                        onChange={(e) =>
+                          setNuevoProyecto({
+                            ...nuevoProyecto,
+                            publicado: e.target.checked,
+                          })
+                        }
+                      />
+                      Publicar este proyecto en la página
+                    </label>
+                    {proyectoEditando && (
+                      <>
+                        <div className="gestion-proyecto-bitacora">
+                          <div className="gestion-proyecto-bitacora-encabezado">
+                            <span>BITÁCORA DE AVANCES</span>
+                            <p>
+                              Registrá los pasos importantes que va dando el
+                              proyecto.
+                            </p>
+                          </div>
+
+                          <div className="gestion-proyecto-bitacora-formulario">
+                            <label>
+                              Fecha
+                              <input
+                                type="date"
+                                max={hoy}
+                                value={nuevoAvanceProyecto.fecha}
+                                onChange={(e) =>
+                                  setNuevoAvanceProyecto({
+                                    ...nuevoAvanceProyecto,
+                                    fecha: e.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              ¿Qué pasó?
+                              <input
+                                type="text"
+                                placeholder="Ej.: Dirección autorizó el uso del SUM"
+                                value={nuevoAvanceProyecto.texto}
+                                onChange={(e) =>
+                                  setNuevoAvanceProyecto({
+                                    ...nuevoAvanceProyecto,
+                                    texto: e.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+
+                            <button
+                              type="button"
+                              className="boton-agregar-avance"
+                              onClick={agregarAvanceProyecto}
+                            >
+                              ＋ Agregar avance
+                            </button>
+                          </div>
+                        </div>
+
+                        {nuevoProyecto.avances?.length > 0 && (
+                          <div className="gestion-proyecto-bitacora-lista">
+                            {nuevoProyecto.avances.map((avance, index) => {
+                              const fechaAvance = avance.fecha
+                                ? avance.fecha.split("-").reverse().join("/")
+                                : "Sin fecha";
+
+                              return (
+                                <div
+                                  key={`${avance.fecha}-${index}`}
+                                  className="gestion-proyecto-bitacora-item"
+                                >
+                                  <div className="gestion-proyecto-bitacora-item-superior">
+                                    <span>{fechaAvance}</span>
+
+                                    <button
+                                      type="button"
+                                      className="boton-eliminar-avance"
+                                      onClick={() =>
+                                        eliminarAvanceProyecto(index)
+                                      }
+                                      title="Quitar avance"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+
+                                  <p>{avance.texto}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      className="gestion-galeria-boton-guardar"
+                      onClick={guardarProyecto}
+                    >
+                      {proyectoEditando
+                        ? "Guardar cambios"
+                        : "Guardar proyecto"}
+                    </button>
+
                     <button
                       type="button"
                       className="gestion-galeria-boton-cancelar"
@@ -4160,11 +4564,121 @@ function App() {
                     {proyectosGestion.length === 0 ? (
                       <p>No hay proyectos cargados todavía.</p>
                     ) : (
-                      <p>
-                        Hay {proyectosGestion.length} proyecto
-                        {proyectosGestion.length === 1 ? "" : "s"} cargado
-                        {proyectosGestion.length === 1 ? "" : "s"}.
-                      </p>
+                      <div className="gestion-galeria-lista">
+                        {proyectosGestion.map((proyecto) => {
+                          const nombresEstado = {
+                            idea: "💭 Idea",
+                            planificando: "📝 Planificando",
+                            "en-marcha": "🚀 En marcha",
+                            "casi-listo": "🎯 Casi listo",
+                            logrado: "🎉 Logrado",
+                          };
+
+                          const fechaFormateada = proyecto.fechaInicio
+                            ? proyecto.fechaInicio
+                                .split("-")
+                                .reverse()
+                                .join("/")
+                            : "";
+
+                          return (
+                            <article
+                              key={proyecto._id}
+                              className="gestion-galeria-item"
+                            >
+                              <div className="gestion-galeria-item-contenido">
+                                <div className="gestion-galeria-item-superior">
+                                  <span className="gestion-galeria-fecha">
+                                    {fechaFormateada || "Sin fecha"}
+                                  </span>
+
+                                  <span
+                                    className={`gestion-galeria-estado ${
+                                      proyecto.publicado
+                                        ? "publicado"
+                                        : "borrador"
+                                    }`}
+                                  >
+                                    {proyecto.publicado
+                                      ? "Publicado"
+                                      : "Borrador"}
+                                  </span>
+                                </div>
+
+                                <h4>{proyecto.titulo}</h4>
+
+                                <p>{proyecto.descripcion}</p>
+
+                                <div className="gestion-proyecto-datos">
+                                  <span>{proyecto.categoria}</span>
+
+                                  <strong>
+                                    {nombresEstado[proyecto.estado] ||
+                                      "💭 Idea"}
+                                  </strong>
+                                </div>
+
+                                {proyecto.responsable && (
+                                  <p>
+                                    <strong>Responsable:</strong>{" "}
+                                    {proyecto.responsable}
+                                  </p>
+                                )}
+
+                                {proyecto.proximoPaso && (
+                                  <div className="gestion-proyecto-proximo">
+                                    <span>PRÓXIMO PASO</span>
+                                    <strong>{proyecto.proximoPaso}</strong>
+                                  </div>
+                                )}
+
+                                {proyecto.avances?.length > 0 && (
+                                  <div className="gestion-proyecto-resumen-bitacora">
+                                    <span>📓</span>
+                                    <strong>
+                                      Bitácora · {proyecto.avances.length}{" "}
+                                      {proyecto.avances.length === 1
+                                        ? "avance"
+                                        : "avances"}
+                                    </strong>
+                                  </div>
+                                )}
+                                <div className="gestion-proyecto-acciones">
+                                  <button
+                                    type="button"
+                                    className="boton-editar"
+                                    onClick={() => editarProyecto(proyecto)}
+                                  >
+                                    ✏️ Editar
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className="boton-publicar"
+                                    onClick={() =>
+                                      cambiarPublicacionProyecto(proyecto)
+                                    }
+                                  >
+                                    📢{" "}
+                                    {proyecto.publicado
+                                      ? "Retirar"
+                                      : "Publicar"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="boton-eliminar"
+                                    onClick={() =>
+                                      eliminarProyecto(proyecto._id)
+                                    }
+                                  >
+                                    🗑️ Eliminar
+                                  </button>
+                                </div>
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 </section>
